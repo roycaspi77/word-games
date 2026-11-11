@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>משחקי מילים</title>
+  <meta name="description" content="משחקי מילים בעברית: משחק זיכרון, טריוויה ומילון">
+  <meta name="theme-color" content="#7c3aed">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Varela+Round&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=1">
+</head>
+<body>
+  <div id="bg" aria-hidden="true"><span>א</span><span>ב</span><span>ג</span><span>ד</span><span>ה</span><span>ו</span><span>ז</span><span>ח</span></div>
+
+  <header id="topbar">
+    <button id="backBtn" class="icon-btn" aria-label="חזרה" hidden>➜</button>
+    <a href="#home" id="logo">משחקי מילים</a>
+    <div id="starsPill" title="הכוכבים שלי">⭐ <b id="starsCount">0</b></div>
+  </header>
+
+  <main id="app"></main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <script src="words.js?v=1"></script>
+  <script src="app.js?v=1"></script>
+</body>
+</html>
