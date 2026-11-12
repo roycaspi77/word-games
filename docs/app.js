@@ -27,7 +27,10 @@
     fav: [],              // ids
     badges: [],           // ids
     days: [],             // 'YYYY-MM-DD' played
-    stats: { games: 0, memoryGames: 0, triviaGames: 0, flashSeen: 0, correct: 0, bestStreak: 0, perfectTrivia: 0, memoryBest: {} },
+    stats: {
+      games: 0, memoryGames: 0, triviaGames: 0, flashSeen: 0, correct: 0, bestStreak: 0, perfectTrivia: 0, memoryBest: {},
+      memoryThreeStars: 0, reverseGames: 0, wordsearchGames: 0, wordsFound: 0, searchHard: 0, searchNoHint: 0, early: 0, night: 0,
+    },
   };
   let S = load();
   function load() {
@@ -53,6 +56,9 @@
     if (!S.days.includes(t)) S.days.push(t);
     if (S.days.length > 400) S.days = S.days.slice(-400);
     S.stats.games++;
+    const hr = new Date().getHours();
+    if (hr < 7 && hr >= 4) S.stats.early++;
+    if (hr >= 21) S.stats.night++;
   }
   function dayStreak() {
     const set = new Set(S.days);
@@ -201,22 +207,57 @@
   }
 
   // ---------- badges ----------
+  // each badge: v() = current value, goal = value needed (progress bar on the achievements screen)
+  const st = () => S.stats;
   const BADGES = [
-    { id: 'first',   e: '🎈', t: 'התחלה טובה',    d: 'שיחקת משחק ראשון',           test: () => S.stats.games >= 1 },
-    { id: 'mem1',    e: '🧠', t: 'זיכרון של פיל',  d: 'סיימת משחק זיכרון',           test: () => S.stats.memoryGames >= 1 },
-    { id: 'memPro',  e: '🐘', t: 'אלוף הזיכרון',   d: 'סיימת זיכרון קשה (8 זוגות)',  test: () => !!S.stats.memoryBest[8] },
-    { id: 'triv1',   e: '❓', t: 'יודע תשובות',    d: 'סיימת סבב טריוויה',           test: () => S.stats.triviaGames >= 1 },
-    { id: 'perfect', e: '💯', t: 'מושלם!',          d: '10 מתוך 10 בטריוויה',         test: () => S.stats.perfectTrivia >= 1 },
-    { id: 'streak5', e: '🔥', t: 'על הגל',          d: '5 תשובות נכונות ברצף',        test: () => S.stats.bestStreak >= 5 },
-    { id: 'streak15',e: '🚀', t: 'בלתי ניתן לעצירה', d: '15 תשובות נכונות ברצף',      test: () => S.stats.bestStreak >= 15 },
-    { id: 'words25', e: '📗', t: 'אספן מילים',     d: 'שלטת ב-25 מילים',             test: () => masteredCount() >= 25 },
-    { id: 'words100',e: '📚', t: 'תולעת ספרים',    d: 'שלטת ב-100 מילים',            test: () => masteredCount() >= 100 },
-    { id: 'wordsAll',e: '👑', t: 'מלך המילים',      d: 'שלטת בכל המילים!',            test: () => masteredCount() >= WORDS.length },
-    { id: 'days3',   e: '📅', t: 'מתמיד',           d: 'שיחקת 3 ימים ברצף',           test: () => dayStreak() >= 3 },
-    { id: 'days7',   e: '🏅', t: 'שבוע של מילים',   d: 'שיחקת 7 ימים ברצף',           test: () => dayStreak() >= 7 },
-    { id: 'stars100',e: '🌟', t: 'מאה כוכבים',      d: 'אספת 100 כוכבים',             test: () => S.stars >= 100 },
-    { id: 'flash',   e: '🃏', t: 'לומד חרוץ',       d: 'עברת על 30 כרטיסיות',         test: () => S.stats.flashSeen >= 30 },
+    // getting started
+    { id: 'first',    e: '🎈', t: 'התחלה טובה',        d: 'שיחקת משחק ראשון',              v: () => st().games, goal: 1 },
+    { id: 'allGames', e: '🌈', t: 'טועם מכל הבא ליד',  d: 'שיחקת בכל המשחקים',             v: () => [st().memoryGames, st().triviaGames, st().wordsearchGames, st().flashSeen].filter(Boolean).length, goal: 4 },
+    { id: 'games25',  e: '🎮', t: 'שחקן מושבע',        d: 'שיחקת 25 משחקים',               v: () => st().games, goal: 25 },
+    { id: 'games100', e: '🕹️', t: 'מכור למילים',       d: 'שיחקת 100 משחקים',              v: () => st().games, goal: 100 },
+    // memory
+    { id: 'mem1',     e: '🧠', t: 'זיכרון של פיל',     d: 'סיימת משחק זיכרון',             v: () => st().memoryGames, goal: 1 },
+    { id: 'mem3',     e: '✨', t: 'זיכרון צילומי',     d: '3 כוכבים במשחק זיכרון',         v: () => st().memoryThreeStars, goal: 1 },
+    { id: 'mem32',    e: '🦁', t: 'לב של אריה',        d: 'סיימת זיכרון בינוני (32 זוגות)', v: () => st().memoryBest[32] ? 1 : 0, goal: 1 },
+    { id: 'memPro',   e: '🐘', t: 'אלוף הזיכרון',      d: 'סיימת זיכרון קשה (64 זוגות)',    v: () => st().memoryBest[64] ? 1 : 0, goal: 1 },
+    { id: 'mem10',    e: '🎴', t: 'מהפך קלפים',        d: 'סיימת 10 משחקי זיכרון',         v: () => st().memoryGames, goal: 10 },
+    // trivia
+    { id: 'triv1',    e: '❓', t: 'יודע תשובות',       d: 'סיימת סבב טריוויה',             v: () => st().triviaGames, goal: 1 },
+    { id: 'reverse',  e: '🔄', t: 'הפוך על הפוך',      d: 'סיימת טריוויה במצב "איזו מילה מתאימה"', v: () => st().reverseGames, goal: 1 },
+    { id: 'perfect',  e: '💯', t: 'מושלם!',             d: '10 מתוך 10 בטריוויה',           v: () => st().perfectTrivia, goal: 1 },
+    { id: 'perfect5', e: '🎯', t: 'צלף',                d: '5 סבבים מושלמים בטריוויה',      v: () => st().perfectTrivia, goal: 5 },
+    { id: 'triv10',   e: '🎓', t: 'פרופסור',            d: 'סיימת 10 סבבי טריוויה',         v: () => st().triviaGames, goal: 10 },
+    { id: 'streak5',  e: '🔥', t: 'על הגל',             d: '5 תשובות נכונות ברצף',          v: () => st().bestStreak, goal: 5 },
+    { id: 'streak15', e: '🚀', t: 'בלתי ניתן לעצירה',  d: '15 תשובות נכונות ברצף',         v: () => st().bestStreak, goal: 15 },
+    { id: 'streak30', e: '☄️', t: 'כוכב שביט',          d: '30 תשובות נכונות ברצף',         v: () => st().bestStreak, goal: 30 },
+    { id: 'correct100', e: '💡', t: 'מאה תשובות',       d: '100 תשובות נכונות בסך הכול',    v: () => st().correct, goal: 100 },
+    { id: 'correct500', e: '🧙', t: 'קוסם המילים',      d: '500 תשובות נכונות בסך הכול',    v: () => st().correct, goal: 500 },
+    // word search
+    { id: 'search1',  e: '🔎', t: 'בלש מילים',          d: 'סיימת תפזורת',                  v: () => st().wordsearchGames, goal: 1 },
+    { id: 'searchEagle', e: '🦅', t: 'עין של נשר',      d: 'סיימת תפזורת בלי רמזים',        v: () => st().searchNoHint, goal: 1 },
+    { id: 'searchHard', e: '🕵️', t: 'בלש על',          d: 'סיימת תפזורת קשה',              v: () => st().searchHard, goal: 1 },
+    { id: 'search50', e: '🧩', t: 'מוצא הכול',          d: 'מצאת 50 מילים בתפזורות',        v: () => st().wordsFound, goal: 50 },
+    // learning
+    { id: 'flash',    e: '🃏', t: 'לומד חרוץ',          d: 'עברת על 30 כרטיסיות',           v: () => st().flashSeen, goal: 30 },
+    { id: 'flash100', e: '📝', t: 'שקדן',                d: 'עברת על 100 כרטיסיות',          v: () => st().flashSeen, goal: 100 },
+    { id: 'fav10',    e: '❤️', t: 'יש לי מועדפות',      d: 'סימנת 10 מילים מועדפות',        v: () => S.fav.length, goal: 10 },
+    { id: 'words10',  e: '🌱', t: 'נבט של ידע',         d: 'שלטת ב-10 מילים',               v: masteredCount, goal: 10 },
+    { id: 'words25',  e: '📗', t: 'אספן מילים',         d: 'שלטת ב-25 מילים',               v: masteredCount, goal: 25 },
+    { id: 'words100', e: '📚', t: 'תולעת ספרים',        d: 'שלטת ב-100 מילים',              v: masteredCount, goal: 100 },
+    { id: 'words200', e: '🏰', t: 'מגדל של מילים',      d: 'שלטת ב-200 מילים',              v: masteredCount, goal: 200 },
+    { id: 'wordsAll', e: '👑', t: 'מלך המילים',          d: 'שלטת בכל המילים!',              v: masteredCount, goal: WORDS.length },
+    // habits and stars
+    { id: 'days3',    e: '📅', t: 'מתמיד',               d: 'שיחקת 3 ימים ברצף',             v: dayStreak, goal: 3 },
+    { id: 'days7',    e: '🏅', t: 'שבוע של מילים',       d: 'שיחקת 7 ימים ברצף',             v: dayStreak, goal: 7 },
+    { id: 'days14',   e: '🥈', t: 'שבועיים בלי הפסקה',   d: 'שיחקת 14 ימים ברצף',            v: dayStreak, goal: 14 },
+    { id: 'days30',   e: '🥇', t: 'חודש של אלופים',      d: 'שיחקת 30 ימים ברצף',            v: dayStreak, goal: 30 },
+    { id: 'early',    e: '🐓', t: 'משכים קום',           d: 'שיחקת לפני 7 בבוקר',            v: () => st().early, goal: 1 },
+    { id: 'night',    e: '🦉', t: 'ינשוף לילה',          d: 'שיחקת אחרי 9 בערב',             v: () => st().night, goal: 1 },
+    { id: 'stars100', e: '🌟', t: 'מאה כוכבים',          d: 'אספת 100 כוכבים',               v: () => S.stars, goal: 100 },
+    { id: 'stars500', e: '💫', t: 'גלקסיה',              d: 'אספת 500 כוכבים',               v: () => S.stars, goal: 500 },
+    { id: 'stars1000',e: '🪐', t: 'אלף כוכבים',          d: 'אספת 1000 כוכבים',              v: () => S.stars, goal: 1000 },
   ];
+  BADGES.forEach(b => { b.test = () => b.v() >= b.goal; });
   function checkBadges() {
     const got = BADGES.filter(b => !S.badges.includes(b.id) && b.test());
     got.forEach(b => S.badges.push(b.id));
@@ -228,11 +269,12 @@
   const GAMES = [
     { id: 'memory', emoji: '🧠', title: 'משחק הזיכרון', sub: 'מצאו זוגות של מילה ופירוש', tile: 'tile-purple' },
     { id: 'trivia', emoji: '❓', title: 'טריוויה',       sub: 'מה פירוש המילה? 3 אפשרויות', tile: 'tile-pink' },
+    { id: 'wordsearch', emoji: '🔎', title: 'תפזורת',     sub: 'מוצאים מילים לפי הפירוש',   tile: 'tile-green' },
     { id: 'flash',  emoji: '🃏', title: 'כרטיסיות',      sub: 'לומדים מילים חדשות',        tile: 'tile-orange' },
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, memory, trivia, flash, words, badges, settings };
+  const SCREENS = { home, memory, trivia, wordsearch, flash, words, badges, settings };
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
     const fn = SCREENS[name] || home;
@@ -282,26 +324,27 @@
   function bindGo() { $app.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { sfx('tap'); location.hash = '#' + b.dataset.go; }); }
 
   // ===== Memory game =====
-  let memPairs = 6;
+  const MEM_LEVELS = [[8, '😊 קל – 8 זוגות'], [32, '😎 בינוני – 32 זוגות'], [64, '🤯 קשה – 64 זוגות']];
+  let memPairs = 8;
   function memory() {
     h(`<section class="panel">
       <h2>🧠 משחק הזיכרון</h2>
       <p>הפכו שני קלפים בכל תור. מצאו את <b>המילה</b> ואת <b>הפירוש</b> שלה!</p>
       <div class="label">כמה זוגות?</div>
       <div class="chips">
-        ${[[4, '😊 קל – 4'], [6, '😎 בינוני – 6'], [8, '🤯 קשה – 8']].map(([n, l]) => `<button class="chip ${memPairs === n ? 'on' : ''}" data-n="${n}">${l}</button>`).join('')}
+        ${MEM_LEVELS.map(([n, l]) => `<button class="chip ${memPairs === n ? 'on' : ''}" data-n="${n}">${l}</button>`).join('')}
       </div>
-      ${poolPicker(4)}
+      ${poolPicker(8)}
       <button class="btn" id="go">יאללה, מתחילים! 🎉</button>
     </section>`);
     $app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { memPairs = +b.dataset.n; sfx('tap'); memory(); });
     bindPoolPicker(memory);
-    document.getElementById('go').onclick = () => { if (ensurePool(4)) memoryPlay(); };
+    document.getElementById('go').onclick = () => { if (ensurePool(memPairs)) memoryPlay(); };
   }
 
   function memoryPlay() {
     const src = poolWords();
-    let chosen = choose(src, memPairs, w => w.def.length <= 48);
+    let chosen = choose(src, memPairs, w => w.def.length <= (memPairs >= 32 ? 40 : 48));
     if (chosen.length < memPairs) chosen = choose(src, memPairs); // small pools: allow long definitions
     const n = chosen.length;
     const cards = shuffle(chosen.flatMap(w => [{ w, kind: 'term' }, { w, kind: 'def' }]));
@@ -309,7 +352,7 @@
     h(`<section>
       <div class="hud"><span>🔄 תורות: <b id="mv">0</b></span><span>✅ זוגות: <b id="pr">0</b>/${n}</span><span>⏱️ <b id="tm">0:00</b></span></div>
       <div class="legend"><span><i style="background:#ede9fe"></i>מילה</span><span><i style="background:#ffedd5"></i>פירוש</span></div>
-      <div class="mem-grid ${n >= 8 ? 'many' : ''}" id="grid">
+      <div class="mem-grid ${n >= 64 ? 'xl' : n >= 32 ? 'lg' : ''}" id="grid">
         ${cards.map((c, i) => `<button class="mcard" data-i="${i}" aria-label="קלף ${i + 1}"><div class="inner">
           <div class="face back">?</div>
           <div class="face front ${c.kind}">${esc(c.kind === 'term' ? c.w.term : c.w.def)}</div></div></button>`).join('')}
@@ -345,10 +388,11 @@
 
   function memoryWin(n, moves, secs, chosen) {
     stopTimers();
-    const stars = moves <= n + 2 ? 3 : moves <= n * 2 ? 2 : 1;
+    const stars = moves <= Math.ceil(n * 1.6) ? 3 : moves <= n * 2.5 ? 2 : 1;
     const earned = stars * 2 + n;
     addStars(earned);
     S.stats.memoryGames++;
+    if (stars === 3) S.stats.memoryThreeStars++;
     const best = S.stats.memoryBest[n];
     const newBest = !best || moves < best;
     if (newBest) S.stats.memoryBest[n] = moves;
@@ -359,7 +403,8 @@
       <div class="result-stars">${[1, 2, 3].map(k => `<span class="${k <= stars ? '' : 'off'}">⭐</span>`).join('')}</div>
       <p>מצאת ${n} זוגות ב-<b>${moves}</b> תורות ובזמן ${Math.floor(secs / 60)}:${pad(secs % 60)}.<br>
       ${newBest ? '🏆 שיא חדש!' : `השיא שלך: ${best} תורות`} · הרווחת <b>${earned}</b> כוכבים</p>
-      <ul class="mistakes" style="text-align:right">${chosen.map(w => `<li style="background:#f0fdf4"><b>${esc(w.term)}</b> – ${esc(w.def)}</li>`).join('')}</ul>
+      <details ${n <= 8 ? 'open' : ''} style="text-align:right"><summary class="label">המילים מהמשחק (${n})</summary>
+      <ul class="mistakes">${chosen.map(w => `<li style="background:#f0fdf4"><b>${esc(w.term)}</b> – ${esc(w.def)}</li>`).join('')}</ul></details>
       <div class="row center" style="margin-top:14px">
         <button class="btn" id="again">🔁 עוד פעם</button>
         <button class="btn ghost" data-go="home">🏠 לדף הבית</button>
@@ -455,6 +500,7 @@
       const bonus = right === qs.length ? 5 : 0;
       addStars(starsGot + bonus);
       S.stats.triviaGames++; if (right === qs.length && qs.length >= TR_LEN) S.stats.perfectTrivia++;
+      if (trMode === 'def') S.stats.reverseGames++;
       markPlayed(); save();
       sfx(stars >= 2 ? 'win' : 'good'); if (stars >= 2) confetti();
       const wrong = qs.filter((_, k) => !results[k]);
@@ -473,6 +519,197 @@
       checkBadges();
     }
     show();
+  }
+
+  // ===== Word search (תפזורת) =====
+  // dirs are [row step, column step]; column 0 is on the right (RTL), so [0,1] reads like normal Hebrew
+  const WS_LEVELS = {
+    easy:   { label: '😊 קל',    size: 8,  n: 5,  dirs: [[0, 1], [1, 0]] },
+    medium: { label: '😎 בינוני', size: 10, n: 7,  dirs: [[0, 1], [1, 0], [1, 1], [1, -1]] },
+    hard:   { label: '🤯 קשה',   size: 12, n: 10, dirs: [[0, 1], [1, 0], [1, 1], [1, -1], [0, -1], [-1, 0], [-1, -1], [-1, 1]] },
+  };
+  let wsLevel = 'easy';
+  const FILL = 'אבגדהוזחטיכלמנסעפצקרשתאויהלמר'; // common letters appear more often
+  const wsNorm = t => strip(t).replace(/\(.*?\)/g, '').replace(/[^א-ת]/g, '');
+
+  function wordsearch() {
+    const L = WS_LEVELS[wsLevel];
+    h(`<section class="panel">
+      <h2>🔎 תפזורת</h2>
+      <p>המילים מתחבאות בלוח, והפירושים שלהן כתובים מתחת. מצאו כל מילה וסמנו אותה: גוררים את האצבע מהאות הראשונה עד האחרונה, או לוחצים על האות הראשונה ואז על האחרונה.</p>
+      <div class="label">רמת קושי</div>
+      <div class="chips">
+        ${Object.entries(WS_LEVELS).map(([k, l]) => `<button class="chip ${wsLevel === k ? 'on' : ''}" data-l="${k}">${l.label} – ${l.size}×${l.size}, ${l.n} מילים</button>`).join('')}
+      </div>
+      ${poolPicker(L.n)}
+      <button class="btn teal" id="go">יאללה, מחפשים! 🔍</button>
+    </section>`);
+    $app.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { wsLevel = b.dataset.l; sfx('tap'); wordsearch(); });
+    bindPoolPicker(wordsearch);
+    document.getElementById('go').onclick = () => { if (ensurePool(L.n)) wordsearchPlay(); };
+  }
+
+  function wsPlace(g, s, dirs) {
+    const N = g.length;
+    for (let t = 0; t < 200; t++) {
+      const [dr, dc] = pick(dirs);
+      const r0 = Math.floor(Math.random() * N), c0 = Math.floor(Math.random() * N);
+      const r1 = r0 + dr * (s.length - 1), c1 = c0 + dc * (s.length - 1);
+      if (r1 < 0 || r1 >= N || c1 < 0 || c1 >= N) continue;
+      const cells = []; let fit = true;
+      for (let i = 0; i < s.length; i++) {
+        const r = r0 + dr * i, c = c0 + dc * i;
+        if (g[r][c] && g[r][c] !== s[i]) { fit = false; break; }
+        cells.push([r, c]);
+      }
+      if (!fit) continue;
+      cells.forEach(([r, c], i) => { g[r][c] = s[i]; });
+      return cells;
+    }
+    return null;
+  }
+
+  function wsBuild(L, src) {
+    const ok = src.filter(w => { const s = wsNorm(w.term); return s.length >= 2 && s.length <= L.size; });
+    const cands = choose(ok, Math.min(ok.length, L.n * 3));
+    let best = null;
+    for (let attempt = 0; attempt < 25; attempt++) {
+      const g = Array.from({ length: L.size }, () => Array(L.size).fill(''));
+      const placed = [];
+      // longest words first – they are the hardest to fit
+      for (const w of cands.slice().sort((a, b) => wsNorm(b.term).length - wsNorm(a.term).length)) {
+        if (placed.length >= L.n) break;
+        const s = wsNorm(w.term);
+        if (placed.some(p => p.s.includes(s) || s.includes(p.s))) continue; // no word hidden inside another
+        const cells = wsPlace(g, s, L.dirs);
+        if (cells) placed.push({ w, s, cells, found: false });
+      }
+      if (!best || placed.length > best.placed.length) best = { g, placed };
+      if (placed.length >= L.n) break;
+    }
+    best.g.forEach(row => row.forEach((v, c) => { if (!v) row[c] = pick(FILL); }));
+    return best;
+  }
+
+  function wordsearchPlay() {
+    const L = WS_LEVELS[wsLevel];
+    const { g, placed } = wsBuild(L, poolWords());
+    const N = L.size, n = placed.length;
+    const bank = shuffle(placed);
+    let found = 0, secs = 0, hints = 0, color = 0;
+    h(`<section>
+      <div class="hud"><span>✅ נמצאו: <b id="fd">0</b>/${n}</span><span>💡 רמזים: <b id="hn">0</b></span><span>⏱️ <b id="tm">0:00</b></span></div>
+      <div class="ws-grid" id="wsg" style="--n:${N}">
+        ${g.map((row, r) => row.map((ch, c) => `<div class="ws-cell" data-r="${r}" data-c="${c}">${ch}</div>`).join('')).join('')}
+      </div>
+      <div class="row center" style="margin:14px 0">
+        <button class="btn ghost small" id="hint">💡 רמז</button>
+        <button class="btn ghost small" id="again">🔁 לוח חדש</button>
+      </div>
+      <div class="panel">
+        <div class="label">בנק הפירושים – לכל פירוש מסתתרת מילה בלוח:</div>
+        <ol class="ws-bank">${bank.map(p => `<li data-s="${p.s}"><span class="def">${esc(p.w.def)}</span><span class="ans"></span></li>`).join('')}</ol>
+      </div>
+    </section>`);
+    const gridEl = document.getElementById('wsg');
+    const cellEls = [...gridEl.querySelectorAll('.ws-cell')];
+    const cellOf = (r, c) => cellEls[r * N + c];
+    const fmt = s => Math.floor(s / 60) + ':' + pad(s % 60);
+    every(() => { secs++; document.getElementById('tm').textContent = fmt(secs); }, 1000);
+    document.getElementById('again').onclick = wordsearchPlay;
+
+    function lineCells(a, b) {
+      const r0 = +a.dataset.r, c0 = +a.dataset.c, r1 = +b.dataset.r, c1 = +b.dataset.c;
+      if (!(r0 === r1 || c0 === c1 || Math.abs(r1 - r0) === Math.abs(c1 - c0))) return null;
+      const dr = Math.sign(r1 - r0), dc = Math.sign(c1 - c0), len = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0));
+      const out = [];
+      for (let i = 0; i <= len; i++) out.push(cellOf(r0 + dr * i, c0 + dc * i));
+      return out;
+    }
+    function paint(cells) {
+      cellEls.forEach(e => e.classList.remove('sel'));
+      (cells || []).forEach(e => e.classList.add('sel'));
+    }
+    function check(cells) {
+      if (cells.length < 2) return;
+      const s = cells.map(e => e.textContent).join('');
+      const rev = [...s].reverse().join('');
+      const p = placed.find(x => !x.found && (x.s === s || x.s === rev));
+      if (!p) { sfx('bad'); gridEl.classList.add('nope'); later(() => gridEl.classList.remove('nope'), 400); return; }
+      p.found = true; found++;
+      const k = color++ % 8;
+      cells.forEach(e => { e.className = e.className.replace(/\bf\d\b/g, '').trim() + ' found f' + k; });
+      const li = $app.querySelector(`.ws-bank li[data-s="${p.s}"]`);
+      li.classList.add('done', 'f' + k);
+      li.querySelector('.ans').textContent = p.w.term;
+      record(p.w.id, true); save();
+      document.getElementById('fd').textContent = found;
+      sfx('good'); confetti(30);
+      if (found === n) later(win, 900);
+    }
+
+    // drag from first to last letter, or tap first then last
+    let start = null, cur = null, pending = null, dragging = false;
+    const cellAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.classList.contains('ws-cell') ? el : null; };
+    gridEl.addEventListener('pointerdown', e => {
+      const c = cellAt(e.clientX, e.clientY); if (!c) return;
+      e.preventDefault();
+      try { gridEl.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      dragging = true; start = pending || c; cur = c;
+      paint(lineCells(start, cur) || [start]);
+    });
+    gridEl.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const c = cellAt(e.clientX, e.clientY);
+      if (!c || c === cur) return;
+      cur = c;
+      const l = lineCells(start, cur); if (l) paint(l);
+    });
+    gridEl.addEventListener('pointerup', () => {
+      if (!dragging) return;
+      dragging = false;
+      if (cur === start && !pending) { pending = start; paint([start]); sfx('tap'); return; }
+      const l = lineCells(start, cur);
+      pending = null; paint(null);
+      if (l) check(l);
+    });
+    gridEl.addEventListener('pointercancel', () => { dragging = false; pending = null; paint(null); });
+
+    document.getElementById('hint').onclick = () => {
+      const left = placed.filter(p => !p.found);
+      if (!left.length) return;
+      hints++; document.getElementById('hn').textContent = hints; sfx('tap');
+      const p = pick(left);
+      const [r, c] = p.cells[0];
+      const el = cellOf(r, c);
+      el.classList.remove('hint'); void el.offsetWidth; el.classList.add('hint');
+      const li = $app.querySelector(`.ws-bank li[data-s="${p.s}"]`);
+      li.classList.remove('hint'); void li.offsetWidth; li.classList.add('hint');
+    };
+
+    function win() {
+      stopTimers();
+      const stars = hints === 0 ? 3 : hints <= 2 ? 2 : 1;
+      const earned = n + stars * 2;
+      addStars(earned);
+      S.stats.wordsearchGames++; S.stats.wordsFound += n;
+      if (wsLevel === 'hard') S.stats.searchHard++;
+      if (hints === 0) S.stats.searchNoHint++;
+      markPlayed(); save();
+      sfx('win'); confetti();
+      h(`<section class="panel center">
+        <h1>מצאת את כל המילים! 🎉</h1>
+        <div class="result-stars">${[1, 2, 3].map(k => `<span class="${k <= stars ? '' : 'off'}">⭐</span>`).join('')}</div>
+        <p>${n} מילים בזמן ${fmt(secs)}${hints ? `, עם ${hints} רמזים` : ', בלי אף רמז! 🦅'} · הרווחת <b>${earned}</b> כוכבים</p>
+        <ul class="mistakes">${placed.map(p => `<li style="background:#f0fdf4"><b>${esc(p.w.term)}</b> – ${esc(p.w.def)}</li>`).join('')}</ul>
+        <div class="row center" style="margin-top:14px">
+          <button class="btn teal" id="again">🔁 עוד תפזורת</button>
+          <button class="btn ghost" data-go="home">🏠 לדף הבית</button>
+        </div>
+      </section>`);
+      document.getElementById('again').onclick = wordsearchPlay; bindGo();
+      checkBadges();
+    }
   }
 
   // ===== Flash cards =====
@@ -590,7 +827,9 @@
       </div>
       <div class="badges">${BADGES.map(b => {
         const has = S.badges.includes(b.id);
-        return `<div class="badge ${has ? '' : 'locked'}"><span class="e">${b.e}</span><b>${b.t}</b><small>${b.d}</small></div>`;
+        const cur = Math.min(b.v(), b.goal);
+        const bar = !has && b.goal > 1 ? `<div class="progress small"><div style="width:${Math.round(cur * 100 / b.goal)}%"></div></div><small>${cur}/${b.goal}</small>` : '';
+        return `<div class="badge ${has ? '' : 'locked'}"><span class="e">${b.e}</span><b>${b.t}</b><small>${b.d}</small>${bar}</div>`;
       }).join('')}</div>
     </section>`);
   }
