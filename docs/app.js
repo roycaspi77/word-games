@@ -523,10 +523,12 @@
 
   // ===== Word search (תפזורת) =====
   // dirs are [row step, column step]; column 0 is on the right (RTL), so [0,1] reads like normal Hebrew
+  // every level hides words across, down, diagonally and backwards; the levels differ in size and word count
+  const WS_DIRS = [[0, 1], [1, 0], [1, 1], [0, -1], [-1, 0], [1, -1], [-1, -1], [-1, 1]];
   const WS_LEVELS = {
-    easy:   { label: '😊 קל',    size: 8,  n: 5,  dirs: [[0, 1], [1, 0]] },
-    medium: { label: '😎 בינוני', size: 10, n: 7,  dirs: [[0, 1], [1, 0], [1, 1], [1, -1]] },
-    hard:   { label: '🤯 קשה',   size: 12, n: 10, dirs: [[0, 1], [1, 0], [1, 1], [1, -1], [0, -1], [-1, 0], [-1, -1], [-1, 1]] },
+    easy:   { label: '😊 קל',    size: 8,  n: 5 },
+    medium: { label: '😎 בינוני', size: 10, n: 7 },
+    hard:   { label: '🤯 קשה',   size: 12, n: 10 },
   };
   let wsLevel = 'easy';
   const FILL = 'אבגדהוזחטיכלמנסעפצקרשתאויהלמר'; // common letters appear more often
@@ -536,7 +538,7 @@
     const L = WS_LEVELS[wsLevel];
     h(`<section class="panel">
       <h2>🔎 תפזורת</h2>
-      <p>המילים מתחבאות בלוח, והפירושים שלהן כתובים מתחת. מצאו כל מילה וסמנו אותה: גוררים את האצבע מהאות הראשונה עד האחרונה, או לוחצים על האות הראשונה ואז על האחרונה.</p>
+      <p>המילים מתחבאות בלוח – לאורך, לרוחב, באלכסון וגם הפוך! הפירושים שלהן כתובים מתחת ללוח. מצאו כל מילה וסמנו אותה: גוררים את האצבע מהאות הראשונה עד האחרונה, או לוחצים על האות הראשונה ואז על האחרונה.</p>
       <div class="label">רמת קושי</div>
       <div class="chips">
         ${Object.entries(WS_LEVELS).map(([k, l]) => `<button class="chip ${wsLevel === k ? 'on' : ''}" data-l="${k}">${l.label} – ${l.size}×${l.size}, ${l.n} מילים</button>`).join('')}
@@ -549,22 +551,26 @@
     document.getElementById('go').onclick = () => { if (ensurePool(L.n)) wordsearchPlay(); };
   }
 
+  // kind of a direction: across / down / diagonal, and whether it reads backwards (column 0 is on the right)
+  const wsKinds = ([dr, dc]) => [dr === 0 ? 'across' : dc === 0 ? 'down' : 'diag', ...(dc === -1 || (dc === 0 && dr === -1) ? ['reverse'] : [])];
+
+  // places s in the first direction of `dirs` that has room, at a random free spot
   function wsPlace(g, s, dirs) {
     const N = g.length;
-    for (let t = 0; t < 200; t++) {
-      const [dr, dc] = pick(dirs);
-      const r0 = Math.floor(Math.random() * N), c0 = Math.floor(Math.random() * N);
-      const r1 = r0 + dr * (s.length - 1), c1 = c0 + dc * (s.length - 1);
-      if (r1 < 0 || r1 >= N || c1 < 0 || c1 >= N) continue;
-      const cells = []; let fit = true;
-      for (let i = 0; i < s.length; i++) {
-        const r = r0 + dr * i, c = c0 + dc * i;
-        if (g[r][c] && g[r][c] !== s[i]) { fit = false; break; }
-        cells.push([r, c]);
+    for (const [dr, dc] of dirs) {
+      const spots = [];
+      for (let r0 = 0; r0 < N; r0++) for (let c0 = 0; c0 < N; c0++) {
+        const r1 = r0 + dr * (s.length - 1), c1 = c0 + dc * (s.length - 1);
+        if (r1 < 0 || r1 >= N || c1 < 0 || c1 >= N) continue;
+        let fit = true;
+        for (let i = 0; i < s.length && fit; i++) { const v = g[r0 + dr * i][c0 + dc * i]; if (v && v !== s[i]) fit = false; }
+        if (fit) spots.push([r0, c0]);
       }
-      if (!fit) continue;
-      cells.forEach(([r, c], i) => { g[r][c] = s[i]; });
-      return cells;
+      if (!spots.length) continue;
+      const [r0, c0] = pick(spots);
+      const cells = [];
+      for (let i = 0; i < s.length; i++) { const r = r0 + dr * i, c = c0 + dc * i; g[r][c] = s[i]; cells.push([r, c]); }
+      return { cells, dir: [dr, dc] };
     }
     return null;
   }
@@ -573,19 +579,26 @@
     const ok = src.filter(w => { const s = wsNorm(w.term); return s.length >= 2 && s.length <= L.size; });
     const cands = choose(ok, Math.min(ok.length, L.n * 3));
     let best = null;
-    for (let attempt = 0; attempt < 25; attempt++) {
+    for (let attempt = 0; attempt < 40; attempt++) {
       const g = Array.from({ length: L.size }, () => Array(L.size).fill(''));
       const placed = [];
+      const kinds = new Set();
+      // the first four words go across, down, diagonal and backwards, so every board has all four; the rest go any way
+      const must = shuffle([[[0, 1]], [[1, 0]], shuffle([[1, 1], [1, -1], [-1, 1], [-1, -1]]), shuffle([[0, -1], [-1, 0]])]);
       // longest words first – they are the hardest to fit
       for (const w of cands.slice().sort((a, b) => wsNorm(b.term).length - wsNorm(a.term).length)) {
         if (placed.length >= L.n) break;
         const s = wsNorm(w.term);
         if (placed.some(p => p.s.includes(s) || s.includes(p.s))) continue; // no word hidden inside another
-        const cells = wsPlace(g, s, L.dirs);
-        if (cells) placed.push({ w, s, cells, found: false });
+        const dirs = placed.length < must.length ? must[placed.length] : shuffle(WS_DIRS);
+        const res = wsPlace(g, s, dirs);
+        if (!res) continue; // try the next word for this direction
+        placed.push({ w, s, cells: res.cells, found: false });
+        wsKinds(res.dir).forEach(k => kinds.add(k));
       }
-      if (!best || placed.length > best.placed.length) best = { g, placed };
-      if (placed.length >= L.n) break;
+      const score = placed.length * 10 + kinds.size;
+      if (!best || score > best.score) best = { g, placed, score };
+      if (placed.length >= L.n && kinds.size === 4) break;
     }
     best.g.forEach(row => row.forEach((v, c) => { if (!v) row[c] = pick(FILL); }));
     return best;
