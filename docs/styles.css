@@ -232,6 +232,13 @@ main:has(.mem-grid.xl) { max-width: 1200px; }
   max-width: 560px; margin: 0 auto; touch-action: none; user-select: none; -webkit-user-select: none;
 }
 .ws-grid.nope { animation: wobble .35s; }
+/* computer / wide screens: puzzle on the right, clues beside it on the left */
+@media (min-width: 900px) {
+  main:has(.ws-layout) { max-width: 1200px; }
+  .ws-layout { display: grid; grid-template-columns: minmax(0, 560px) minmax(280px, 1fr); gap: 24px; align-items: start; }
+  .ws-layout .ws-grid { margin: 0; }
+  .ws-clues { position: sticky; top: 80px; margin: 0; max-height: calc(100vh - 100px); overflow-y: auto; }
+}
 .ws-cell {
   aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px;
   background: #f5f3ff; font-family: var(--font-title); font-weight: 700; font-size: clamp(14px, 4.4vw, 26px);

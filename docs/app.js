@@ -612,16 +612,20 @@
     let found = 0, secs = 0, hints = 0, color = 0;
     h(`<section>
       <div class="hud"><span>✅ נמצאו: <b id="fd">0</b>/${n}</span><span>💡 רמזים: <b id="hn">0</b></span><span>⏱️ <b id="tm">0:00</b></span></div>
-      <div class="ws-grid" id="wsg" style="--n:${N}">
-        ${g.map((row, r) => row.map((ch, c) => `<div class="ws-cell" data-r="${r}" data-c="${c}">${ch}</div>`).join('')).join('')}
-      </div>
-      <div class="row center" style="margin:14px 0">
-        <button class="btn ghost small" id="hint">💡 רמז</button>
-        <button class="btn ghost small" id="again">🔁 לוח חדש</button>
-      </div>
-      <div class="panel">
-        <div class="label">בנק הפירושים – לכל פירוש מסתתרת מילה בלוח:</div>
-        <ol class="ws-bank">${bank.map(p => `<li data-s="${p.s}"><span class="def">${esc(p.w.def)}</span><span class="ans"></span></li>`).join('')}</ol>
+      <div class="ws-layout">
+        <div class="ws-board">
+          <div class="ws-grid" id="wsg" style="--n:${N}">
+            ${g.map((row, r) => row.map((ch, c) => `<div class="ws-cell" data-r="${r}" data-c="${c}">${ch}</div>`).join('')).join('')}
+          </div>
+          <div class="row center" style="margin:14px 0">
+            <button class="btn ghost small" id="hint">💡 רמז</button>
+            <button class="btn ghost small" id="again">🔁 לוח חדש</button>
+          </div>
+        </div>
+        <div class="panel ws-clues">
+          <div class="label">בנק הפירושים – לכל פירוש מסתתרת מילה בלוח:</div>
+          <ol class="ws-bank">${bank.map(p => `<li data-s="${p.s}"><span class="def">${esc(p.w.def)}</span><span class="ans"></span></li>`).join('')}</ol>
+        </div>
       </div>
     </section>`);
     const gridEl = document.getElementById('wsg');
