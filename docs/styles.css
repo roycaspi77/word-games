@@ -258,6 +258,64 @@ main:has(.mem-grid.xl) { max-width: 1200px; }
 .btn.teal { background: var(--teal); }
 .tile-green { background: linear-gradient(135deg, #4ade80, #16a34a); }
 
+/* Duvduv's area (1st grade) */
+:root { --font-niqqud: "Noto Sans Hebrew", "Arial Hebrew", Arial, sans-serif; }
+body.duv { background: linear-gradient(160deg, #fecdd3 0%, #fbcfe8 45%, #fde68a 100%) fixed; }
+.tile-cherry { background: linear-gradient(135deg, #fb7185, #be123c); }
+.btn.cherry { background: #e11d48; }
+.emoji-letter {
+  display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 16px;
+  background: #fff; color: #e11d48; font-family: var(--font-niqqud); font-size: 44px; font-weight: 800;
+}
+.duv-hero { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #fff1f2, #ffe4e6); }
+.duv-hero h1 { margin: 0 0 4px; color: #be123c; }
+.duv-mascot { font-size: 72px; animation: bob 2s ease-in-out infinite; display: inline-block; }
+.duv-card { padding: 22px 16px; }
+.duv-ask { font-family: var(--font-title); font-size: 22px; color: #9f1239; margin-bottom: 6px; }
+.duv-pic { font-size: 110px; line-height: 1.15; margin: 4px 0; }
+.duv-word { font-family: var(--font-niqqud); font-size: 46px; font-weight: 700; color: #be123c; min-height: 60px; }
+.duv-word.big { font-size: 64px; margin: 10px 0; }
+.duv-word.hide { visibility: hidden; }
+.duv-opts { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin: 18px 0 8px; }
+.duv-letter, .duv-pic-btn {
+  border: 0; border-radius: 24px; background: #fff; box-shadow: 0 6px 0 rgba(0, 0, 0, .15);
+  display: flex; align-items: center; justify-content: center; transition: transform .1s;
+}
+.duv-letter { width: 92px; height: 92px; font-family: var(--font-niqqud); font-size: 54px; font-weight: 700; color: #1e1b4b; }
+.duv-letter.tile { width: 72px; height: 80px; font-size: 44px; }
+.duv-pic-btn { width: 112px; height: 112px; font-size: 70px; }
+.duv-letter:active, .duv-pic-btn:active { transform: translateY(4px); }
+.duv-letter.right, .duv-pic-btn.right { background: #bbf7d0; animation: pop2 .35s; }
+.duv-letter.wrong, .duv-pic-btn.wrong { background: #fecaca; animation: wobble .35s; }
+.duv-letter.used { opacity: .25; }
+.duv-letter.shake { animation: wobble .35s; background: #fecaca; }
+.duv-letter.hint { animation: hintPulse .7s 3; }
+.duv-slots { display: flex; gap: 8px; justify-content: center; margin: 12px 0; flex-wrap: wrap; }
+.duv-slot {
+  width: 64px; height: 76px; border: 3px dashed #fda4af; border-radius: 16px; background: #fff1f2;
+  display: flex; align-items: center; justify-content: center; font-family: var(--font-niqqud); font-size: 42px; font-weight: 700;
+}
+.duv-slot.filled { border-style: solid; border-color: #22c55e; background: #fff; animation: pop2 .3s; }
+.duv-target {
+  font-family: var(--font-niqqud); font-size: 72px; font-weight: 800; color: #fff; background: #e11d48;
+  width: 110px; height: 110px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 0 #9f1239;
+}
+.balloon-area {
+  position: relative; height: 480px; max-height: 62vh; overflow: hidden; border-radius: 24px;
+  background: linear-gradient(#7dd3fc, #e0f2fe); box-shadow: var(--shadow); touch-action: manipulation;
+}
+.balloon {
+  position: absolute; bottom: -130px; width: 78px; height: 94px; border: 0; border-radius: 50% 50% 46% 46%;
+  font-family: var(--font-niqqud); font-size: 44px; font-weight: 800; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .25);
+  box-shadow: inset -10px -12px 0 rgba(0, 0, 0, .14); animation-name: rise; animation-timing-function: linear;
+  animation-fill-mode: forwards; transition: scale .15s, opacity .25s, filter .15s;
+}
+.balloon::after { content: ''; position: absolute; bottom: -34px; left: 50%; width: 2px; height: 34px; background: rgba(0, 0, 0, .35); }
+.balloon.nope { scale: .8; filter: grayscale(.7); }
+.balloon.popped { scale: 1.7; opacity: 0; }
+@keyframes rise { to { transform: translateY(-680px); } }
+
 /* dictionary */
 .search {
   width: 100%; font-family: inherit; font-size: 19px; padding: 13px 16px; border-radius: 16px;

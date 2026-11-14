@@ -30,6 +30,7 @@
     stats: {
       games: 0, memoryGames: 0, triviaGames: 0, flashSeen: 0, correct: 0, bestStreak: 0, perfectTrivia: 0, memoryBest: {},
       memoryThreeStars: 0, reverseGames: 0, wordsearchGames: 0, wordsFound: 0, searchHard: 0, searchNoHint: 0, early: 0, night: 0,
+      duvGames: 0, duvBuilt: 0, duvPopped: 0, duvPerfect: 0,
     },
   };
   let S = load();
@@ -167,10 +168,10 @@
 
   // speech (only if the device has a Hebrew voice)
   function heVoice() { return (window.speechSynthesis && speechSynthesis.getVoices().find(v => /^he|^iw/i.test(v.lang))) || null; }
-  function say(text) {
+  function say(text, keepNiqqud) {
     const v = heVoice(); if (!v) return;
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(strip(text)); u.voice = v; u.lang = v.lang; u.rate = 0.9;
+    const u = new SpeechSynthesisUtterance(keepNiqqud ? text : strip(text)); u.voice = v; u.lang = v.lang; u.rate = 0.9;
     speechSynthesis.speak(u);
   }
   if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { if (location.hash === '#words' || location.hash === '#flash') route(); };
@@ -246,6 +247,12 @@
     { id: 'words100', e: '📚', t: 'תולעת ספרים',        d: 'שלטת ב-100 מילים',              v: masteredCount, goal: 100 },
     { id: 'words200', e: '🏰', t: 'מגדל של מילים',      d: 'שלטת ב-200 מילים',              v: masteredCount, goal: 200 },
     { id: 'wordsAll', e: '👑', t: 'מלך המילים',          d: 'שלטת בכל המילים!',              v: masteredCount, goal: WORDS.length },
+    // Duvduv's area
+    { id: 'duv1',     e: '🍒', t: 'חבר של דובדוב',      d: 'שיחקת באיזור של דובדוב',        v: () => st().duvGames, goal: 1 },
+    { id: 'duvPerfect', e: '🌟', t: 'כוכב כיתה א\'',     d: 'הכול נכון במשחק של דובדוב',     v: () => st().duvPerfect, goal: 1 },
+    { id: 'duvBuild25', e: '🧱', t: 'בנאי מילים',        d: 'בנית 25 מילים',                 v: () => st().duvBuilt, goal: 25 },
+    { id: 'duvPop50', e: '🎉', t: 'מפוצץ בלונים',        d: 'פוצצת 50 בלונים נכונים',        v: () => st().duvPopped, goal: 50 },
+    { id: 'duv20',    e: '🧺', t: 'סל דובדבנים',         d: '20 משחקים באיזור של דובדוב',    v: () => st().duvGames, goal: 20 },
     // habits and stars
     { id: 'days3',    e: '📅', t: 'מתמיד',               d: 'שיחקת 3 ימים ברצף',             v: dayStreak, goal: 3 },
     { id: 'days7',    e: '🏅', t: 'שבוע של מילים',       d: 'שיחקת 7 ימים ברצף',             v: dayStreak, goal: 7 },
@@ -274,17 +281,20 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, memory, trivia, wordsearch, flash, words, badges, settings };
+  const SCREENS = { home, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvBalloons };
+  let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
     const fn = SCREENS[name] || home;
     stopTimers();
+    document.body.classList.toggle('duv', name.startsWith('duv'));
+    backTo = name.startsWith('duv') && name !== 'duvduv' ? '#duvduv' : '#home';
     document.getElementById('backBtn').hidden = fn === home;
     fn();
     scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route);
-  document.getElementById('backBtn').onclick = () => { location.hash = '#home'; };
+  document.getElementById('backBtn').onclick = () => { location.hash = backTo; };
 
   let timers = [];
   function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
@@ -307,6 +317,7 @@
       </div>
       <div class="game-grid">
         ${GAMES.map(g => `<button class="game-tile ${g.tile}" data-go="${g.id}"><span class="emoji">${g.emoji}</span><span class="title">${g.title}</span><span class="sub">${g.sub}</span></button>`).join('')}
+        <button class="game-tile tile-cherry" data-go="duvduv"><span class="emoji">🍒</span><span class="title">האיזור של דובדוב</span><span class="sub">משחקי עברית לכיתה א'</span></button>
         <button class="game-tile tile-teal" data-go="words"><span class="emoji">📖</span><span class="title">המילון שלי</span><span class="sub">חיפוש, מועדפים ומילים קשות</span></button>
         <button class="game-tile tile-blue" data-go="badges"><span class="emoji">🏆</span><span class="title">הישגים</span><span class="sub">${S.badges.length} מתוך ${BADGES.length} תגים</span></button>
       </div>
@@ -826,6 +837,229 @@
       '<li class="panel center">לא נמצאו מילים 🙈</li>';
     ul.querySelectorAll('[data-fav]').forEach(b => b.onclick = () => { toggleFav(b.dataset.fav); b.textContent = S.fav.includes(b.dataset.fav) ? '⭐' : '☆'; });
     ul.querySelectorAll('[data-say]').forEach(b => b.onclick = () => say(WORDS.find(w => w.id === b.dataset.say).term));
+  }
+
+  // ===== Duvduv's area (האיזור של דובדוב): Hebrew games for 1st graders =====
+  const KIDS = [];
+  (window.KIDS_RAW || '').split('\n').forEach(line => {
+    const i = line.indexOf('|'); if (i < 0) return;
+    const e = line.slice(0, i).trim(), w = line.slice(i + 1).trim();
+    if (e && w) KIDS.push({ e, w, letter: firstLetter(w), parts: w.match(/[א-ת][֑-ׇ]*/g) || [] });
+  });
+  const KID_LETTERS = [...new Set(KIDS.map(k => k.letter))];
+  const LETTER_NAMES = window.LETTER_NAMES || {};
+  const DUV_GAMES = [
+    { id: 'duvFirst',    emoji: '<b class="emoji-letter">א</b>', title: 'באיזו אות מתחילה?', sub: 'מסתכלים על התמונה ובוחרים אות', tile: 'tile-cherry' },
+    { id: 'duvRead',     emoji: '📖', title: 'קוראים ובוחרים',    sub: 'קוראים מילה ומוצאים תמונה',    tile: 'tile-pink' },
+    { id: 'duvBuild',    emoji: '🧩', title: 'בונים מילה',        sub: 'מסדרים אותיות לפי הסדר',       tile: 'tile-orange' },
+    { id: 'duvBalloons', emoji: '🎈', title: 'בלונים של אותיות',  sub: 'מפוצצים בלונים עם האות',       tile: 'tile-blue' },
+  ];
+  const DUV_PRAISE = ['כל הכבוד! 🍒', 'נכון! 👏', 'יופי! 🌟', 'מעולה! 🎉', 'אלוף! 🏆'];
+  const voiceOn = () => !!heVoice();
+
+  function duvduv() {
+    const kidName = S.name ? ` ${esc(S.name)}` : '';
+    h(`<section>
+      <div class="panel duv-hero">
+        <div class="duv-mascot">🍒</div>
+        <div>
+          <h1>היי${kidName}! אני דובדוב</h1>
+          <div>בואו נשחק ונלמד עברית ביחד!</div>
+        </div>
+      </div>
+      <div class="game-grid">
+        ${DUV_GAMES.map(g => `<button class="game-tile ${g.tile}" data-go="${g.id}"><span class="emoji">${g.emoji}</span><span class="title">${g.title}</span><span class="sub">${g.sub}</span></button>`).join('')}
+      </div>
+    </section>`);
+    bindGo();
+  }
+
+  function duvDots(results, i, total) {
+    return `<div class="q-progress">${Array.from({ length: total }, (_, k) => `<i class="${k < i ? (results[k] ? 'ok' : 'bad') : k === i ? 'now' : ''}"></i>`).join('')}</div>`;
+  }
+
+  function duvResult(right, total, again) {
+    const stars = right >= total * 0.9 ? 3 : right >= total * 0.6 ? 2 : right > 0 ? 1 : 0;
+    addStars(right);
+    S.stats.duvGames++;
+    if (right === total && total >= 8) S.stats.duvPerfect++;
+    markPlayed(); save();
+    sfx(stars >= 2 ? 'win' : 'good'); if (stars >= 2) confetti();
+    const msg = right === total ? 'וואו, מושלם! 🤩' : stars === 3 ? 'מדהים! 🤩' : stars === 2 ? 'כל הכבוד! 🎉' : 'יופי של התחלה! 🌱';
+    h(`<section class="panel center">
+      <div class="duv-mascot">🍒</div>
+      <h1>${msg}</h1>
+      <div class="result-stars">${[1, 2, 3].map(k => `<span class="${k <= stars ? '' : 'off'}">⭐</span>`).join('')}</div>
+      <p style="font-size:22px">הצלחת <b>${right}</b> מתוך ${total} · קיבלת <b>${right}</b> כוכבים</p>
+      <div class="row center">
+        <button class="btn cherry" id="again">🔁 עוד פעם</button>
+        <button class="btn ghost" data-go="duvduv">🍒 לאיזור של דובדוב</button>
+      </div>
+    </section>`);
+    say(msg.replace(/[^א-ת ,!]/g, ''));
+    document.getElementById('again').onclick = again; bindGo();
+    checkBadges();
+  }
+
+  // 1. which letter does the picture start with?
+  function duvFirst() {
+    const qs = shuffle(KIDS).slice(0, 10), results = [];
+    let i = 0;
+    function show() {
+      const w = qs[i];
+      const opts = shuffle([w.letter, ...shuffle(KID_LETTERS.filter(x => x !== w.letter)).slice(0, 2)]);
+      const v = voiceOn();
+      h(`<section><div class="panel center duv-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="duv-ask">באיזו אות מתחילה המילה?</div>
+        <div class="duv-pic">${w.e}</div>
+        <div class="duv-word ${v ? 'hide' : ''}" id="dw">${w.w}</div>
+        ${v ? `<div class="row center"><button class="btn ghost small" id="sayB">🔊 שמעו</button><button class="btn ghost small" id="showW">👀 הראו את המילה</button></div>` : ''}
+        <div class="duv-opts">${opts.map(o => `<button class="duv-letter" data-o="${o}">${o}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      if (v) {
+        later(() => say(w.w, true), 250);
+        document.getElementById('sayB').onclick = () => say(w.w, true);
+        document.getElementById('showW').onclick = () => document.getElementById('dw').classList.remove('hide');
+      }
+      const btns = [...$app.querySelectorAll('.duv-letter')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = b.dataset.o === w.letter;
+        results.push(ok);
+        document.getElementById('dw').classList.remove('hide');
+        if (ok) { b.classList.add('right'); sfx('good'); document.getElementById('fb').textContent = pick(DUV_PRAISE); }
+        else {
+          b.classList.add('wrong'); sfx('bad');
+          btns.find(x => x.dataset.o === w.letter).classList.add('right');
+          document.getElementById('fb').textContent = `המילה ${strip(w.w)} מתחילה באות ${w.letter}`;
+        }
+        say(`${w.w}, ${LETTER_NAMES[w.letter] || w.letter}`, true);
+        later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvFirst); }, ok ? 1500 : 2800);
+      });
+    }
+    show();
+  }
+
+  // 2. read the word and choose its picture
+  function duvRead() {
+    const qs = shuffle(KIDS).slice(0, 10), results = [];
+    let i = 0;
+    function show() {
+      const w = qs[i];
+      const opts = shuffle([w, ...shuffle(KIDS.filter(x => x !== w && x.letter !== w.letter)).slice(0, 2)]);
+      h(`<section><div class="panel center duv-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="duv-ask">קראו את המילה ובחרו את התמונה המתאימה</div>
+        <div class="duv-word big">${w.w}</div>
+        ${voiceOn() ? '<button class="btn ghost small" id="sayB">🔊 עזרה: שמעו את המילה</button>' : ''}
+        <div class="duv-opts">${opts.map((o, k) => `<button class="duv-pic-btn" data-k="${k}" aria-label="תמונה ${k + 1}">${o.e}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const sb = document.getElementById('sayB'); if (sb) sb.onclick = () => say(w.w, true);
+      const btns = [...$app.querySelectorAll('.duv-pic-btn')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = opts[+b.dataset.k] === w;
+        results.push(ok);
+        if (ok) { b.classList.add('right'); sfx('good'); document.getElementById('fb').textContent = pick(DUV_PRAISE); }
+        else { b.classList.add('wrong'); sfx('bad'); btns[opts.indexOf(w)].classList.add('right'); document.getElementById('fb').textContent = 'כמעט! זאת התמונה הנכונה 👆'; }
+        say(w.w, true);
+        later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvRead); }, ok ? 1400 : 2600);
+      });
+    }
+    show();
+  }
+
+  // 3. build the word from its letters (each letter keeps its niqqud)
+  function duvBuild() {
+    const qs = shuffle(KIDS.filter(k => k.parts.length >= 2 && k.parts.length <= 5)).slice(0, 8), results = [];
+    let i = 0;
+    function show() {
+      const w = qs[i], parts = w.parts;
+      let tiles = shuffle(parts.map((p, k) => ({ p, k })));
+      if (tiles.every((t, k) => t.k === k)) tiles = tiles.reverse(); // never already in order
+      let pos = 0, mistakes = 0;
+      h(`<section><div class="panel center duv-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="duv-ask">סדרו את האותיות ובנו את המילה</div>
+        <div class="duv-pic">${w.e}</div>
+        <div class="duv-slots">${parts.map((_, k) => `<div class="duv-slot" data-s="${k}"></div>`).join('')}</div>
+        <div class="duv-opts">${tiles.map((t, k) => `<button class="duv-letter tile" data-t="${k}">${t.p}</button>`).join('')}</div>
+        <div class="row center">${voiceOn() ? '<button class="btn ghost small" id="sayB">🔊 שמעו את המילה</button>' : ''}<button class="btn ghost small" id="hintB">💡 רמז</button></div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const sb = document.getElementById('sayB'); if (sb) sb.onclick = () => say(w.w, true);
+      const slots = [...$app.querySelectorAll('.duv-slot')];
+      const btns = [...$app.querySelectorAll('.duv-letter.tile')];
+      document.getElementById('hintB').onclick = () => {
+        const b = btns.find(x => !x.disabled && tiles[+x.dataset.t].p === parts[pos]);
+        if (b) { mistakes++; b.classList.remove('hint'); void b.offsetWidth; b.classList.add('hint'); sfx('tap'); }
+      };
+      btns.forEach(b => b.onclick = () => {
+        const t = tiles[+b.dataset.t];
+        if (t.p !== parts[pos]) { // same letter with the same niqqud counts too
+          mistakes++; sfx('bad'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); return;
+        }
+        sfx('tap'); b.disabled = true; b.classList.add('used');
+        slots[pos].textContent = t.p; slots[pos].classList.add('filled'); pos++;
+        if (pos === parts.length) {
+          const ok = mistakes === 0; results.push(ok);
+          S.stats.duvBuilt++; save();
+          sfx('good'); confetti(40); say(w.w, true);
+          document.getElementById('fb').textContent = pick(DUV_PRAISE);
+          btns.forEach(x => x.disabled = true);
+          later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvBuild); }, 1800);
+        }
+      });
+    }
+    show();
+  }
+
+  // 4. pop the balloons that carry the target letter
+  function duvBalloons() {
+    const target = pick(KID_LETTERS);
+    const COUNT = 16, GAP = 1000, RISE = 7000;
+    const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6'];
+    let spawned = 0, targets = 0, popped = 0, misses = 0;
+    h(`<section>
+      <div class="panel center duv-card" style="padding:14px">
+        <div class="duv-ask">פוצצו את כל הבלונים עם האות</div>
+        <div class="row center"><span class="duv-target">${target}</span>${voiceOn() ? '<button class="icon-btn" id="sayB" aria-label="השמעה">🔊</button>' : ''}</div>
+        <div class="hud" style="margin:8px 0 0"><span>🎈 פוצצת: <b id="pp">0</b></span></div>
+      </div>
+      <div class="balloon-area" id="area"></div>
+    </section>`);
+    const area = document.getElementById('area');
+    const sb = document.getElementById('sayB');
+    if (sb) sb.onclick = () => say(LETTER_NAMES[target] || target, true);
+    later(() => say(`פוצצו את הבלונים עם האות ${LETTER_NAMES[target] || target}`, true), 300);
+    function spawn() {
+      const isT = Math.random() < 0.45 || COUNT - spawned <= 6 - targets; // at least 6 targets per round
+      const letter = isT ? target : pick(KID_LETTERS.filter(x => x !== target));
+      if (isT) targets++;
+      const b = document.createElement('button');
+      b.className = 'balloon'; b.textContent = letter;
+      b.style.left = (4 + Math.random() * 76) + '%';
+      b.style.background = pick(colors);
+      b.style.animationDuration = (RISE + Math.random() * 1500) + 'ms';
+      b.onclick = () => {
+        if (b.dataset.done) return;
+        if (letter === target) {
+          b.dataset.done = '1'; popped++; document.getElementById('pp').textContent = popped; sfx('good');
+          b.style.transform = getComputedStyle(b).transform; b.style.animation = 'none';
+          b.classList.add('popped');
+          setTimeout(() => b.remove(), 300);
+        } else { misses++; sfx('bad'); b.classList.add('nope'); setTimeout(() => b.classList.remove('nope'), 350); }
+      };
+      b.addEventListener('animationend', e => { if (e.animationName === 'rise') b.remove(); });
+      area.appendChild(b);
+      spawned++;
+      if (spawned < COUNT) later(spawn, GAP);
+      else later(() => { S.stats.duvPopped += popped; duvResult(popped, targets, duvBalloons); }, RISE + 1800);
+    }
+    later(spawn, 900);
   }
 
   // ===== Achievements =====

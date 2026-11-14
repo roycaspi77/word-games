@@ -7,6 +7,12 @@ A cheerful Hebrew vocabulary app for kids that you can install on a phone or com
 - **❓ Trivia**: 10 questions with 3 answers each. There are two modes: "what does the word mean?" and "which word fits this meaning?". The wrong answers are meanings or words from the same list, and the app skips any that overlap the right answer. It has a 50/50 hint, streaks, and a list of the words to go over again at the end.
 - **🔎 Word search (תפזורת)**: the words are hidden in a letter grid and their meanings are listed below it as a bank. Drag from the first letter to the last, or tap the first and then the last. Words are hidden across, down, diagonally and backwards on every level. Easy is 8×8 with 5 words, medium is 10×10 with 7, and hard is 12×12 with 10. A hint flashes a word's first letter.
 - **🃏 Flash cards**: flip a card, then mark "I knew it" or "not yet".
+- **🍒 Duvduv's area (האיזור של דובדוב)**: Hebrew games for 1st graders, built on 78 picture words with niqqud (`docs/kids-words.js`):
+  - *באיזו אות מתחילה?*: see a picture (and hear the word) and pick its first letter out of 3.
+  - *קוראים ובוחרים*: read a word with niqqud and pick its picture out of 3.
+  - *בונים מילה*: tap the letters (each keeps its niqqud) in order to build the word under the picture. It has a hint button.
+  - *בלונים של אותיות*: pop the rising balloons that carry the target letter.
+  - It reads words and letter names aloud when the device has a Hebrew voice.
 - **📖 Dictionary**: search, favourites ⭐, "hard words" and "mastered" filters, and read-aloud when the device has a Hebrew voice.
 - **🏆 Achievements**: stars, 40 badges with progress bars, a streak of days in a row, and how many words are mastered. A word counts as mastered after 3 right answers in a row.
 - **Word of the day** on the home screen, plus settings for the child's name and sound.
