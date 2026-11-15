@@ -31,6 +31,7 @@
       games: 0, memoryGames: 0, triviaGames: 0, flashSeen: 0, correct: 0, bestStreak: 0, perfectTrivia: 0, memoryBest: {},
       memoryThreeStars: 0, reverseGames: 0, wordsearchGames: 0, wordsFound: 0, searchHard: 0, searchNoHint: 0, early: 0, night: 0,
       duvGames: 0, duvBuilt: 0, duvPopped: 0, duvPerfect: 0,
+      engGames: 0, engPerfect: 0, engSpelled: 0, engTenseRight: 0,
     },
   };
   let S = load();
@@ -253,6 +254,12 @@
     { id: 'duvBuild25', e: '🧱', t: 'בנאי מילים',        d: 'בנית 25 מילים',                 v: () => st().duvBuilt, goal: 25 },
     { id: 'duvPop50', e: '🎉', t: 'מפוצץ בלונים',        d: 'פוצצת 50 בלונים נכונים',        v: () => st().duvPopped, goal: 50 },
     { id: 'duv20',    e: '🧺', t: 'סל דובדבנים',         d: '20 משחקים באיזור של דובדוב',    v: () => st().duvGames, goal: 20 },
+    // Noshnosh's area (English)
+    { id: 'eng1',     e: '🌍', t: 'Hello World',          d: 'שיחקת באיזור של נושנוש',        v: () => st().engGames, goal: 1 },
+    { id: 'engPerfect', e: '✅', t: 'Perfect!',            d: 'סבב מושלם באנגלית',             v: () => st().engPerfect, goal: 1 },
+    { id: 'engTense50', e: '⏱️', t: 'אדון הזמנים',        d: '50 תשובות נכונות ב-Simple / Progressive', v: () => st().engTenseRight, goal: 50 },
+    { id: 'engSpell20', e: '🔡', t: 'Spelling Bee',       d: 'איית נכון 20 מילים באנגלית',    v: () => st().engSpelled, goal: 20 },
+    { id: 'eng20',    e: '🗽', t: 'דובר אנגלית',          d: '20 משחקים באיזור של נושנוש',    v: () => st().engGames, goal: 20 },
     // habits and stars
     { id: 'days3',    e: '📅', t: 'מתמיד',               d: 'שיחקת 3 ימים ברצף',             v: dayStreak, goal: 3 },
     { id: 'days7',    e: '🏅', t: 'שבוע של מילים',       d: 'שיחקת 7 ימים ברצף',             v: dayStreak, goal: 7 },
@@ -281,14 +288,16 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvBalloons };
+  const SCREENS = { home, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvBalloons, english, engVocab, engSpell, engTense, engSignal, engRules };
   let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
     const fn = SCREENS[name] || home;
     stopTimers();
     document.body.classList.toggle('duv', name.startsWith('duv'));
-    backTo = name.startsWith('duv') && name !== 'duvduv' ? '#duvduv' : '#home';
+    document.body.classList.toggle('eng', name === 'english' || name.startsWith('eng'));
+    backTo = name.startsWith('duv') && name !== 'duvduv' ? '#duvduv'
+      : name.startsWith('eng') && name !== 'english' ? '#english' : '#home';
     document.getElementById('backBtn').hidden = fn === home;
     fn();
     scrollTo(0, 0);
@@ -318,6 +327,7 @@
       <div class="game-grid">
         ${GAMES.map(g => `<button class="game-tile ${g.tile}" data-go="${g.id}"><span class="emoji">${g.emoji}</span><span class="title">${g.title}</span><span class="sub">${g.sub}</span></button>`).join('')}
         <button class="game-tile tile-cherry" data-go="duvduv"><span class="emoji">🍒</span><span class="title">האיזור של דובדוב</span><span class="sub">משחקי עברית לכיתה א'</span></button>
+        <button class="game-tile tile-indigo" data-go="english"><span class="emoji">${ENG_ICON}</span><span class="title">האיזור של נושנוש</span><span class="sub">אנגלית לכיתה ח'</span></button>
         <button class="game-tile tile-teal" data-go="words"><span class="emoji">📖</span><span class="title">המילון שלי</span><span class="sub">חיפוש, מועדפים ומילים קשות</span></button>
         <button class="game-tile tile-blue" data-go="badges"><span class="emoji">🏆</span><span class="title">הישגים</span><span class="sub">${S.badges.length} מתוך ${BADGES.length} תגים</span></button>
       </div>
@@ -1060,6 +1070,364 @@
       else later(() => { S.stats.duvPopped += popped; duvResult(popped, targets, duvBalloons); }, RISE + 1800);
     }
     later(spawn, 900);
+  }
+
+  // ===== Noshnosh's area (האיזור של נושנוש): English for 8th grade =====
+  const EN_WORDS = [];
+  (window.EN_WORDS_RAW || '').split('\n').forEach(line => {
+    const i = line.indexOf('|'); if (i < 0) return;
+    const en = line.slice(0, i).trim(), he = line.slice(i + 1).trim();
+    if (en && he) EN_WORDS.push({ en, he, base: en.replace(/^to\s+/i, '').toLowerCase() });
+  });
+  const EN_TENSE = [];
+  (window.EN_TENSE_RAW || '').split('\n').forEach(line => {
+    const f = line.split('|').map(x => x.trim());
+    if (f.length < 5) return;
+    EN_TENSE.push({ s: f[0], answers: f[1].split('/').map(x => x.trim()), wrong: f[2].split(';').map(x => x.trim()), t: f[3], why: f[4] });
+  });
+  const EN_SIGNALS = window.EN_SIGNALS || { S: [], P: [] };
+  const ENG_ICON = '🌍';
+  const TENSE_NAME = { S: 'Present Simple', P: 'Present Progressive' };
+  const TENSE_HE = { S: 'הווה פשוט', P: 'הווה מתמשך' };
+  const EN_GAMES = [
+    { id: 'engVocab',  emoji: '📝', title: 'אוצר מילים',        sub: 'מה פירוש המילה באנגלית?',          tile: 'tile-blue' },
+    { id: 'engSpell',  emoji: '⌨️', title: 'איות',              sub: 'מקלידים את המילה באנגלית',        tile: 'tile-teal' },
+    { id: 'engTense',  emoji: '⏱️', title: 'הווה פשוט או מתמשך?', sub: 'Present Simple / Progressive', tile: 'tile-purple' },
+    { id: 'engSignal', emoji: '🚦', title: 'מילות זמן',          sub: 'לאיזה זמן שייכת המילה?',          tile: 'tile-orange' },
+    { id: 'engRules',  emoji: '📘', title: 'תזכורת כללים',       sub: 'כל מה שצריך לדעת על שני הזמנים',  tile: 'tile-green' },
+  ];
+  const EN_PRAISE = ['Great job! 🎉', 'Correct! 👏', 'Excellent! 🌟', 'Well done! 🏆', 'Perfect! ✨'];
+  const normEn = s => s.toLowerCase().replace(/[’`]/g, "'").replace(/[?.!,]/g, '').replace(/\s+/g, ' ').trim();
+  function enVoice() { return (window.speechSynthesis && (speechSynthesis.getVoices().find(v => /^en[-_]US/i.test(v.lang)) || speechSynthesis.getVoices().find(v => /^en/i.test(v.lang)))) || null; }
+  function sayEn(text) {
+    const v = enVoice(); if (!v) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.voice = v; u.lang = v.lang; u.rate = 0.9;
+    speechSynthesis.speak(u);
+  }
+  const enSpeakBtn = (id, label) => enVoice() ? `<button class="btn ghost small" id="${id}">🔊 ${label || 'שמעו'}</button>` : '';
+
+  function english() {
+    h(`<section>
+      <div class="panel eng-hero">
+        <div class="eng-mascot">${ENG_ICON}</div>
+        <div>
+          <h1>האיזור של נושנוש</h1>
+          <div>אנגלית לכיתה ח': אוצר מילים, ו-Present Simple מול Present Progressive</div>
+        </div>
+      </div>
+      <div class="game-grid">
+        ${EN_GAMES.map(g => `<button class="game-tile ${g.tile}" data-go="${g.id}"><span class="emoji">${g.emoji}</span><span class="title">${g.title}</span><span class="sub">${g.sub}</span></button>`).join('')}
+      </div>
+    </section>`);
+    bindGo();
+  }
+
+  function engResult(right, total, again) {
+    const stars = right >= total * 0.9 ? 3 : right >= total * 0.6 ? 2 : right > 0 ? 1 : 0;
+    addStars(right);
+    S.stats.engGames++;
+    if (right === total && total >= 10) S.stats.engPerfect++;
+    markPlayed(); save();
+    sfx(stars >= 2 ? 'win' : 'good'); if (stars >= 2) confetti();
+    const msg = right === total ? 'Perfect! מושלם 🤩' : stars === 3 ? 'Excellent! מצוין 🎉' : stars === 2 ? 'Well done! כל הכבוד 👏' : 'Keep practicing! ממשיכים להתאמן 💪';
+    h(`<section class="panel center">
+      <div class="eng-mascot">${ENG_ICON}</div>
+      <h1>${msg}</h1>
+      <div class="result-stars">${[1, 2, 3].map(k => `<span class="${k <= stars ? '' : 'off'}">⭐</span>`).join('')}</div>
+      <p style="font-size:20px">הצלחת <b>${right}</b> מתוך ${total} · קיבלת <b>${right}</b> כוכבים</p>
+      <div id="review"></div>
+      <div class="row center" style="margin-top:12px">
+        <button class="btn blue" id="again">🔁 עוד סבב</button>
+        <button class="btn ghost" data-go="english">${ENG_ICON} לאיזור של נושנוש</button>
+      </div>
+    </section>`);
+    document.getElementById('again').onclick = again; bindGo();
+    checkBadges();
+  }
+  function engReview(items) { // items: [{en, he}] shown under the result
+    const el = document.getElementById('review');
+    if (el && items.length) el.innerHTML = `<div class="label" style="text-align:right">לחזור על:</div><ul class="mistakes">${items.map(x => `<li><b class="en">${esc(x.en)}</b> – ${esc(x.he)}</li>`).join('')}</ul>`;
+  }
+
+  // 1. vocabulary quiz (both directions)
+  let enVocabMode = 'en';
+  function engVocab() {
+    h(`<section class="panel">
+      <h2>📝 אוצר מילים</h2>
+      <p>10 שאלות, 3 תשובות לכל שאלה.</p>
+      <div class="chips">
+        <button class="chip ${enVocabMode === 'en' ? 'on' : ''}" data-m="en"><span class="en">English</span> ← עברית</button>
+        <button class="chip ${enVocabMode === 'he' ? 'on' : ''}" data-m="he">עברית ← <span class="en">English</span></button>
+      </div>
+      <button class="btn blue" id="go">Let's go! 🚀</button>
+    </section>`);
+    $app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { enVocabMode = b.dataset.m; sfx('tap'); engVocab(); });
+    document.getElementById('go').onclick = engVocabPlay;
+  }
+  function engVocabPlay() {
+    const qs = shuffle(EN_WORDS).slice(0, 10), results = [], wrong = [];
+    const fromEn = enVocabMode === 'en';
+    let i = 0;
+    function show() {
+      const w = qs[i];
+      const opts = shuffle([w, ...shuffle(EN_WORDS.filter(x => x !== w)).slice(0, 2)]);
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">${fromEn ? 'מה פירוש המילה?' : 'איך אומרים באנגלית?'}</div>
+        <div class="q-word ${fromEn ? 'en' : ''}">${esc(fromEn ? w.en : w.he)}</div>
+        ${fromEn ? enSpeakBtn('sayB') : ''}
+        <div class="answers">${opts.map((o, k) => `<button class="answer ${fromEn ? '' : 'en'}" data-k="${k}">${esc(fromEn ? o.he : o.en)}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const sb = document.getElementById('sayB'); if (sb) sb.onclick = () => sayEn(w.en);
+      if (fromEn) later(() => sayEn(w.en), 250);
+      const btns = [...$app.querySelectorAll('.answer')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = opts[+b.dataset.k] === w;
+        results.push(ok);
+        if (ok) { b.classList.add('right'); sfx('good'); document.getElementById('fb').textContent = pick(EN_PRAISE); }
+        else { wrong.push(w); b.classList.add('wrong'); btns[opts.indexOf(w)].classList.add('right'); sfx('bad'); document.getElementById('fb').innerHTML = `<span class="en">${esc(w.en)}</span> = ${esc(w.he)}`; }
+        if (!fromEn) sayEn(w.en);
+        later(() => { i++; i < qs.length ? show() : (engResult(results.filter(Boolean).length, qs.length, engVocabPlay), engReview(wrong)); }, ok ? 1200 : 2400);
+      });
+    }
+    show();
+  }
+
+  // 2. spelling: see the Hebrew meaning (and hear the word), type it in English
+  function engSpell() {
+    const qs = shuffle(EN_WORDS).slice(0, 10), results = [], wrong = [];
+    let i = 0;
+    function show() {
+      const w = qs[i];
+      let tries = 0, hints = 0;
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">כתבו באנגלית:</div>
+        <div class="q-word">${esc(w.he)}</div>
+        <div class="row center">${enSpeakBtn('sayB', 'שמעו באנגלית')}<button class="btn ghost small" id="hintB">💡 אות</button></div>
+        <input class="search en spell-input" id="ans" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type here..." dir="ltr">
+        <div class="row center" style="margin-top:12px"><button class="btn teal" id="check">בדיקה ✔️</button><button class="btn ghost small" id="skip">דלג ⏭️</button></div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const input = document.getElementById('ans'), fb = document.getElementById('fb');
+      input.focus();
+      const sb = document.getElementById('sayB'); if (sb) sb.onclick = () => { sayEn(w.en); input.focus(); };
+      const done = (ok) => {
+        results.push(ok); if (!ok) wrong.push(w);
+        if (ok) S.stats.engSpelled++;
+        save();
+        input.disabled = true; ['check', 'skip', 'hintB'].forEach(id => { document.getElementById(id).disabled = true; });
+        sayEn(w.en);
+        later(() => { i++; i < qs.length ? show() : (engResult(results.filter(Boolean).length, qs.length, engSpell), engReview(wrong)); }, ok ? 1300 : 2600);
+      };
+      const check = () => {
+        const v = normEn(input.value);
+        if (!v) return;
+        const good = [normEn(w.en), w.base, 'to ' + w.base];
+        if (good.includes(v)) {
+          input.classList.add('ok'); sfx('good');
+          fb.textContent = hints || tries ? 'Correct! 👍' : pick(EN_PRAISE);
+          done(tries === 0 && hints === 0);
+        } else {
+          tries++; sfx('bad'); input.classList.remove('bad'); void input.offsetWidth; input.classList.add('bad');
+          if (tries >= 2) { fb.innerHTML = `התשובה: <b class="en">${esc(w.en)}</b>`; done(false); }
+          else fb.textContent = 'Not quite – נסו שוב 🙂';
+        }
+      };
+      document.getElementById('check').onclick = check;
+      input.onkeydown = e => { if (e.key === 'Enter') check(); };
+      document.getElementById('skip').onclick = () => { fb.innerHTML = `התשובה: <b class="en">${esc(w.en)}</b>`; sfx('tap'); done(false); };
+      document.getElementById('hintB').onclick = () => {
+        const target = w.base;
+        let k = 0; const cur = input.value.toLowerCase();
+        while (k < cur.length && cur[k] === target[k]) k++;
+        if (k >= target.length) return;
+        hints++; input.value = target.slice(0, k + 1); input.focus(); sfx('tap');
+      };
+    }
+    show();
+  }
+
+  // 3. Present Simple vs Present Progressive – complete the sentence
+  let enTenseMode = 'choose';
+  function engTense() {
+    h(`<section class="panel">
+      <h2>⏱️ Present Simple או Present Progressive?</h2>
+      <p>משלימים את הפועל בסוגריים בזמן הנכון. אחרי כל תשובה מופיע ההסבר למה.</p>
+      <div class="chips">
+        <button class="chip ${enTenseMode === 'choose' ? 'on' : ''}" data-m="choose">👆 בוחרים מ-3 תשובות</button>
+        <button class="chip ${enTenseMode === 'type' ? 'on' : ''}" data-m="type">⌨️ מקלידים לבד (יותר קשה)</button>
+      </div>
+      <button class="btn purple" id="go">Let's go! 🚀</button>
+      <button class="btn ghost small" data-go="engRules" style="margin-inline-start:8px">📘 תזכורת כללים</button>
+    </section>`);
+    $app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { enTenseMode = b.dataset.m; sfx('tap'); engTense(); });
+    document.getElementById('go').onclick = engTensePlay; bindGo();
+  }
+  function engTensePlay() {
+    // a balanced round: 5 Simple + 5 Progressive
+    const qs = shuffle([...shuffle(EN_TENSE.filter(q => q.t === 'S')).slice(0, 5), ...shuffle(EN_TENSE.filter(q => q.t === 'P')).slice(0, 5)]);
+    const results = [], wrong = [];
+    const typing = enTenseMode === 'type';
+    let i = 0;
+    // before answering the blank keeps its "(verb)" hint; after answering the hint is replaced by the right form
+    const blank = (q, fill, cls) => fill
+      ? esc(q.s.replace(/___\s*\([^)]*\)/, '@@')).replace('@@', `<span class="blank ${cls || ''}">${esc(fill)}</span>`)
+      : esc(q.s).replace('___', `<span class="blank">${'&nbsp;'.repeat(10)}</span>`);
+    const filled = q => q.s.replace(/___\s*\([^)]*\)/, q.answers[0]);
+    function show() {
+      const q = qs[i];
+      const opts = shuffle([q.answers[0], ...q.wrong]);
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">השלימו בזמן הנכון:</div>
+        <div class="sentence en" id="sent">${blank(q)}</div>
+        ${typing
+          ? `<input class="search en spell-input" id="ans" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type the verb..." dir="ltr">
+             <div class="row center" style="margin-top:12px"><button class="btn purple" id="check">בדיקה ✔️</button></div>`
+          : `<div class="answers">${opts.map((o, k) => `<button class="answer en" data-k="${k}">${esc(o)}</button>`).join('')}</div>`}
+        <div class="feedback" id="fb"></div>
+        <div class="why" id="why" hidden></div>
+        <button class="btn purple" id="next" hidden>הבא ⬅️</button>
+      </div></section>`);
+      const fb = document.getElementById('fb');
+      const finish = (ok, chosenBtn) => {
+        results.push(ok); if (!ok) wrong.push({ en: filled(q), he: TENSE_HE[q.t] });
+        if (ok) S.stats.engTenseRight++;
+        save();
+        document.getElementById('sent').innerHTML = blank(q, q.answers[0], ok ? 'ok' : 'fix');
+        fb.innerHTML = ok ? pick(EN_PRAISE) : 'Not this time 🙂';
+        const why = document.getElementById('why');
+        why.hidden = false;
+        why.innerHTML = `<span class="tense-tag t${q.t}">${TENSE_NAME[q.t]}</span> ${esc(q.why)}`;
+        sfx(ok ? 'good' : 'bad');
+        const next = document.getElementById('next'); next.hidden = false; next.focus();
+        next.onclick = () => { i++; i < qs.length ? show() : (engResult(results.filter(Boolean).length, qs.length, engTensePlay), engReview(wrong)); };
+      };
+      if (typing) {
+        const input = document.getElementById('ans'); input.focus();
+        const check = () => {
+          const v = normEn(input.value); if (!v) return;
+          input.disabled = true; document.getElementById('check').disabled = true;
+          const ok = q.answers.some(a => normEn(a) === v);
+          input.classList.add(ok ? 'ok' : 'bad');
+          finish(ok);
+        };
+        document.getElementById('check').onclick = check;
+        input.onkeydown = e => { if (e.key === 'Enter' && !input.disabled) check(); };
+      } else {
+        const btns = [...$app.querySelectorAll('.answer')];
+        btns.forEach(b => b.onclick = () => {
+          btns.forEach(x => x.disabled = true);
+          const ok = opts[+b.dataset.k] === q.answers[0];
+          b.classList.add(ok ? 'right' : 'wrong');
+          if (!ok) btns[opts.indexOf(q.answers[0])].classList.add('right');
+          finish(ok);
+        });
+      }
+    }
+    show();
+  }
+
+  // 4. time expressions: which tense do they go with?
+  function engSignal() {
+    const all = [...EN_SIGNALS.S.map(w => ({ w, t: 'S' })), ...EN_SIGNALS.P.map(w => ({ w, t: 'P' }))];
+    const qs = shuffle(all).slice(0, 12), results = [], wrong = [];
+    let i = 0;
+    function show() {
+      const q = qs[i];
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">עם איזה זמן הולכת מילת הזמן הזאת?</div>
+        <div class="q-word en signal">${esc(q.w)}</div>
+        <div class="answers two">
+          <button class="answer en" data-t="S">Present Simple<small>הווה פשוט – הרגל, עובדה</small></button>
+          <button class="answer en" data-t="P">Present Progressive<small>הווה מתמשך – עכשיו, זמני</small></button>
+        </div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const btns = [...$app.querySelectorAll('.answer')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = b.dataset.t === q.t;
+        results.push(ok); if (!ok) wrong.push({ en: q.w, he: TENSE_NAME[q.t] });
+        b.classList.add(ok ? 'right' : 'wrong');
+        if (!ok) btns.find(x => x.dataset.t === q.t).classList.add('right');
+        sfx(ok ? 'good' : 'bad');
+        document.getElementById('fb').textContent = ok ? pick(EN_PRAISE) : `"${q.w}" → ${TENSE_NAME[q.t]}`;
+        later(() => { i++; i < qs.length ? show() : (engResult(results.filter(Boolean).length, qs.length, engSignal), engReview(wrong)); }, ok ? 900 : 2000);
+      });
+    }
+    show();
+  }
+
+  // 5. rules card
+  function engRules() {
+    const sig = t => EN_SIGNALS[t].map(w => `<span class="chip en static">${esc(w)}</span>`).join('');
+    h(`<section>
+      <div class="rules-grid">
+        <div class="panel rule rS">
+          <h2><span class="en">Present Simple</span> – הווה פשוט</h2>
+          <div class="label">מתי משתמשים?</div>
+          <ul>
+            <li>הרגלים ודברים שחוזרים על עצמם – <span class="en">I play football every Monday.</span></li>
+            <li>עובדות ודברים שתמיד נכונים – <span class="en">Water boils at 100°C.</span></li>
+            <li>לוחות זמנים – <span class="en">The train leaves at 8:15.</span></li>
+            <li>פעלי מצב (גם כשיש now!) – <span class="en">I know the answer now.</span></li>
+          </ul>
+          <div class="label">איך בונים?</div>
+          <ul>
+            <li><span class="en">I / you / we / they + <b>play</b></span></li>
+            <li><span class="en">he / she / it + <b>plays</b></span> (מוסיפים s)</li>
+            <li>שלילה: <span class="en">I <b>don't</b> play · She <b>doesn't</b> play</span></li>
+            <li>שאלה: <span class="en"><b>Do</b> you play? · <b>Does</b> he play?</span></li>
+          </ul>
+          <div class="label">איות עם he / she / it</div>
+          <ul>
+            <li>אחרי <span class="en">s, sh, ch, x, o</span> מוסיפים <span class="en">es</span>: <span class="en">watch → watches, go → goes</span></li>
+            <li>עיצור + <span class="en">y</span> → <span class="en">ies</span>: <span class="en">try → tries, cry → cries</span></li>
+          </ul>
+          <div class="label">מילות זמן</div>
+          <div class="chips">${sig('S')}</div>
+        </div>
+        <div class="panel rule rP">
+          <h2><span class="en">Present Progressive</span> – הווה מתמשך</h2>
+          <div class="label">מתי משתמשים?</div>
+          <ul>
+            <li>משהו שקורה עכשיו, ברגע זה – <span class="en">Look! It is raining.</span></li>
+            <li>מצב זמני בתקופה הזאת – <span class="en">This week we are decorating the class.</span></li>
+          </ul>
+          <div class="label">איך בונים?</div>
+          <ul>
+            <li><span class="en">I <b>am</b> + verb<b>-ing</b></span></li>
+            <li><span class="en">he / she / it <b>is</b> + verb<b>-ing</b></span></li>
+            <li><span class="en">you / we / they <b>are</b> + verb<b>-ing</b></span></li>
+            <li>שלילה: <span class="en">I'm not playing · She <b>isn't</b> playing · They <b>aren't</b> playing</span></li>
+            <li>שאלה: <span class="en"><b>Is</b> she playing? · <b>Are</b> you playing?</span></li>
+          </ul>
+          <div class="label">איות של ing</div>
+          <ul>
+            <li>מורידים <span class="en">e</span> בסוף: <span class="en">make → making, dance → dancing</span></li>
+            <li>עיצור-תנועה-עיצור בהברה מוטעמת → מכפילים: <span class="en">swim → swimming, sit → sitting</span></li>
+            <li><span class="en">ie → ying</span>: <span class="en">lie → lying, die → dying</span></li>
+          </ul>
+          <div class="label">מילות זמן</div>
+          <div class="chips">${sig('P')}</div>
+        </div>
+      </div>
+      <div class="panel rule">
+        <h2>⚠️ פעלי מצב – בדרך כלל בלי ing</h2>
+        <p>פעלים שמתארים מצב, רגש, מחשבה או בעלות ולא פעולה:</p>
+        <div class="chips">${['like', 'love', 'hate', 'want', 'need', 'prefer', 'know', 'understand', 'believe', 'remember', 'belong', 'have (= יש)'].map(w => `<span class="chip en static">${w}</span>`).join('')}</div>
+        <p class="en" style="text-align:left">✅ I <b>want</b> a pizza now. &nbsp; ❌ I am wanting a pizza now.</p>
+        <p>אבל <span class="en">have</span> במובן "לאכול / לעשות" כן בא עם ing: <span class="en">We are having dinner.</span></p>
+      </div>
+      <div class="row center"><button class="btn purple" data-go="engTense">⏱️ לתרגל עכשיו</button></div>
+    </section>`);
+    bindGo();
   }
 
   // ===== Achievements =====

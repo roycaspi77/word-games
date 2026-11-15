@@ -13,6 +13,12 @@ A cheerful Hebrew vocabulary app for kids that you can install on a phone or com
   - *בונים מילה*: tap the letters (each keeps its niqqud) in order to build the word under the picture. It has a hint button.
   - *בלונים של אותיות*: pop the rising balloons that carry the target letter.
   - It reads words and letter names aloud when the device has a Hebrew voice.
+- **🌍 Noshnosh's area (האיזור של נושנוש)**: English for 8th grade, with its data in `docs/english-data.js`:
+  - *אוצר מילים*: English → Hebrew or Hebrew → English, 3 options, using the 29 vocabulary words.
+  - *איות*: see the Hebrew meaning (and hear the word) and type it in English. It has letter hints and 2 tries.
+  - *הווה פשוט או מתמשך?*: complete 10 sentences (5 of each tense) by choosing or typing. Each answer shows why.
+  - *מילות זמן*: decide whether a time expression goes with Present Simple or Present Progressive.
+  - *תזכורת כללים*: a rules card covering when to use each tense, how to build it, spelling rules, time words and stative verbs.
 - **📖 Dictionary**: search, favourites ⭐, "hard words" and "mastered" filters, and read-aloud when the device has a Hebrew voice.
 - **🏆 Achievements**: stars, 40 badges with progress bars, a streak of days in a row, and how many words are mastered. A word counts as mastered after 3 right answers in a row.
 - **Word of the day** on the home screen, plus settings for the child's name and sound.
