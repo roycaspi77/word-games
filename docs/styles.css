@@ -348,6 +348,7 @@ body.eng { background: linear-gradient(160deg, #bfdbfe 0%, #c7d2fe 45%, #a5f3fc 
 .rule.rS { border-top: 8px solid var(--blue); }
 .rule.rP { border-top: 8px solid var(--pink); }
 .chip.static { cursor: default; font-size: 15px; padding: 5px 11px; }
+.rule .ex { display: block; text-align: left; color: #4338ca; font-weight: 700; }
 
 /* dictionary */
 .search {

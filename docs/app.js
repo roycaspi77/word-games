@@ -1373,10 +1373,10 @@
           <h2><span class="en">Present Simple</span> – הווה פשוט</h2>
           <div class="label">מתי משתמשים?</div>
           <ul>
-            <li>הרגלים ודברים שחוזרים על עצמם – <span class="en">I play football every Monday.</span></li>
-            <li>עובדות ודברים שתמיד נכונים – <span class="en">Water boils at 100°C.</span></li>
-            <li>לוחות זמנים – <span class="en">The train leaves at 8:15.</span></li>
-            <li>פעלי מצב (גם כשיש now!) – <span class="en">I know the answer now.</span></li>
+            <li>הרגלים ודברים שחוזרים על עצמם <span class="en ex">I play football every Monday.</span></li>
+            <li>עובדות ודברים שתמיד נכונים <span class="en ex">Water boils at 100°C.</span></li>
+            <li>לוחות זמנים <span class="en ex">The train leaves at 8:15.</span></li>
+            <li>פעלי מצב (גם כשיש now!) <span class="en ex">I know the answer now.</span></li>
           </ul>
           <div class="label">איך בונים?</div>
           <ul>
@@ -1397,8 +1397,8 @@
           <h2><span class="en">Present Progressive</span> – הווה מתמשך</h2>
           <div class="label">מתי משתמשים?</div>
           <ul>
-            <li>משהו שקורה עכשיו, ברגע זה – <span class="en">Look! It is raining.</span></li>
-            <li>מצב זמני בתקופה הזאת – <span class="en">This week we are decorating the class.</span></li>
+            <li>משהו שקורה עכשיו, ברגע זה <span class="en ex">Look! It is raining.</span></li>
+            <li>מצב זמני בתקופה הזאת <span class="en ex">This week we are decorating the class.</span></li>
           </ul>
           <div class="label">איך בונים?</div>
           <ul>
