@@ -3,6 +3,11 @@
 A cheerful Hebrew vocabulary app for kids that you can install on a phone or computer. It's a PWA: a static site on GitHub Pages that also works offline. It has no backend and needs no login.
 
 ## What's inside
+The home screen has three areas plus achievements:
+- **🍭 Luli's area (האיזור של לולי)**: Hebrew vocabulary for 6th grade, with the memory game, trivia, word search, flash cards, dictionary and word of the day below.
+- **🍒 Duvduv's area (האיזור של דובדוב)**: Hebrew for 1st grade.
+- **🌍 Noshnosh's area (האיזור של נושנוש)**: English for 8th grade.
+
 - **🧠 Memory game**: find the pairs of a word and its meaning (easy 8, medium 32, hard 64 pairs). Word cards are purple and meaning cards are orange. You get stars based on how many turns you take, and your best score is kept.
 - **❓ Trivia**: 10 questions with 3 answers each. There are two modes: "what does the word mean?" and "which word fits this meaning?". The wrong answers are meanings or words from the same list, and the app skips any that overlap the right answer. It has a 50/50 hint, streaks, and a list of the words to go over again at the end.
 - **🔎 Word search (תפזורת)**: the words are hidden in a letter grid and their meanings are listed below it as a bank. Drag from the first letter to the last, or tap the first and then the last. Words are hidden across, down, diagonally and backwards on every level. Easy is 8×8 with 5 words, medium is 10×10 with 7, and hard is 12×12 with 10. A hint flashes a word's first letter.

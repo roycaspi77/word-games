@@ -288,7 +288,7 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvBalloons, english, engVocab, engSpell, engTense, engSignal, engRules };
+  const SCREENS = { home, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvBalloons, english, engVocab, engSpell, engTense, engSignal, engRules };
   let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
@@ -297,7 +297,8 @@
     document.body.classList.toggle('duv', name.startsWith('duv'));
     document.body.classList.toggle('eng', name === 'english' || name.startsWith('eng'));
     backTo = name.startsWith('duv') && name !== 'duvduv' ? '#duvduv'
-      : name.startsWith('eng') && name !== 'english' ? '#english' : '#home';
+      : name.startsWith('eng') && name !== 'english' ? '#english'
+      : LULI_SCREENS.includes(name) && name !== 'hebrew' ? '#hebrew' : '#home';
     document.getElementById('backBtn').hidden = fn === home;
     fn();
     scrollTo(0, 0);
@@ -310,9 +311,8 @@
   function every(fn, ms) { timers.push(setInterval(fn, ms)); }
   function stopTimers() { timers.forEach(t => { clearTimeout(t); clearInterval(t); }); timers = []; }
 
+  // home: one tile per area, plus achievements and settings
   function home() {
-    const w = WORDS[Math.abs(hash(today())) % WORDS.length];
-    const mc = masteredCount(), pct = Math.round(mc * 100 / WORDS.length);
     const ds = dayStreak();
     const greet = S.name ? `שלום ${esc(S.name)}!` : 'שלום!';
     h(`<section>
@@ -320,23 +320,44 @@
         <div class="owl">🦉</div>
         <div style="flex:1">
           <h1>${greet}</h1>
-          <div class="muted">שלטת ב-<b>${mc}</b> מתוך ${WORDS.length} מילים${ds ? ` · <span class="streak">🔥 ${ds} ימים ברצף</span>` : ''}</div>
+          <div class="muted">לאיזה איזור נכנסים היום?${ds ? ` · <span class="streak">🔥 ${ds} ימים ברצף</span>` : ''}</div>
+        </div>
+      </div>
+      <div class="game-grid areas">
+        <button class="game-tile tile-luli" data-go="hebrew"><span class="emoji">${LULI_ICON}</span><span class="title">האיזור של לולי</span><span class="sub">משחקי עברית לכיתה ו'</span></button>
+        <button class="game-tile tile-cherry" data-go="duvduv"><span class="emoji">🍒</span><span class="title">האיזור של דובדוב</span><span class="sub">משחקי עברית לכיתה א'</span></button>
+        <button class="game-tile tile-indigo" data-go="english"><span class="emoji">${ENG_ICON}</span><span class="title">האיזור של נושנוש</span><span class="sub">אנגלית לכיתה ח'</span></button>
+        <button class="game-tile tile-blue" data-go="badges"><span class="emoji">🏆</span><span class="title">הישגים</span><span class="sub">${S.badges.length} מתוך ${BADGES.length} תגים</span></button>
+      </div>
+      <div class="row center" style="margin-top:18px"><button class="btn ghost small" data-go="settings">⚙️ הגדרות</button></div>
+    </section>`);
+    bindGo();
+  }
+
+  // ===== Luli's area (האיזור של לולי): the vocabulary games for 6th grade =====
+  const LULI_ICON = '🍭';
+  const LULI_SCREENS = ['hebrew', 'memory', 'trivia', 'wordsearch', 'flash', 'words'];
+  function hebrew() {
+    const w = WORDS[Math.abs(hash(today())) % WORDS.length];
+    const mc = masteredCount(), pct = Math.round(mc * 100 / WORDS.length);
+    h(`<section>
+      <div class="panel luli-hero">
+        <div class="eng-mascot">${LULI_ICON}</div>
+        <div style="flex:1">
+          <h1>האיזור של לולי</h1>
+          <div class="muted">שלטת ב-<b>${mc}</b> מתוך ${WORDS.length} מילים</div>
           <div class="progress"><div style="width:${Math.max(pct, mc ? 2 : 0)}%"></div></div>
         </div>
       </div>
       <div class="game-grid">
         ${GAMES.map(g => `<button class="game-tile ${g.tile}" data-go="${g.id}"><span class="emoji">${g.emoji}</span><span class="title">${g.title}</span><span class="sub">${g.sub}</span></button>`).join('')}
-        <button class="game-tile tile-cherry" data-go="duvduv"><span class="emoji">🍒</span><span class="title">האיזור של דובדוב</span><span class="sub">משחקי עברית לכיתה א'</span></button>
-        <button class="game-tile tile-indigo" data-go="english"><span class="emoji">${ENG_ICON}</span><span class="title">האיזור של נושנוש</span><span class="sub">אנגלית לכיתה ח'</span></button>
         <button class="game-tile tile-teal" data-go="words"><span class="emoji">📖</span><span class="title">המילון שלי</span><span class="sub">חיפוש, מועדפים ומילים קשות</span></button>
-        <button class="game-tile tile-blue" data-go="badges"><span class="emoji">🏆</span><span class="title">הישגים</span><span class="sub">${S.badges.length} מתוך ${BADGES.length} תגים</span></button>
       </div>
       <div class="panel wotd" style="margin-top:18px">
         <div class="label">✨ המילה של היום</div>
         <div class="row"><span class="term">${esc(w.term)}</span>${heVoice() ? `<button class="icon-btn" id="sayW" aria-label="השמעה">🔊</button>` : ''}</div>
         <div style="font-size:19px;margin-top:4px">${esc(w.def)}</div>
       </div>
-      <div class="row center"><button class="btn ghost small" data-go="settings">⚙️ הגדרות</button></div>
     </section>`);
     bindGo();
     const sb = document.getElementById('sayW'); if (sb) sb.onclick = () => say(w.term);
@@ -428,7 +449,7 @@
       <ul class="mistakes">${chosen.map(w => `<li style="background:#f0fdf4"><b>${esc(w.term)}</b> – ${esc(w.def)}</li>`).join('')}</ul></details>
       <div class="row center" style="margin-top:14px">
         <button class="btn" id="again">🔁 עוד פעם</button>
-        <button class="btn ghost" data-go="home">🏠 לדף הבית</button>
+        <button class="btn ghost" data-go="hebrew">${LULI_ICON} לאיזור של לולי</button>
       </div>
     </section>`);
     document.getElementById('again').onclick = memoryPlay; bindGo();
@@ -533,7 +554,7 @@
         ${wrong.length ? `<div class="label" style="text-align:right">מילים לחזור עליהן:</div><ul class="mistakes">${wrong.map(w => `<li><b>${esc(w.term)}</b> – ${esc(w.def)}</li>`).join('')}</ul>` : ''}
         <div class="row center" style="margin-top:14px">
           <button class="btn pink" id="again">🔁 עוד סבב</button>
-          <button class="btn ghost" data-go="home">🏠 לדף הבית</button>
+          <button class="btn ghost" data-go="hebrew">${LULI_ICON} לאיזור של לולי</button>
         </div>
       </section>`);
       document.getElementById('again').onclick = triviaPlay; bindGo();
@@ -742,7 +763,7 @@
         <ul class="mistakes">${placed.map(p => `<li style="background:#f0fdf4"><b>${esc(p.w.term)}</b> – ${esc(p.w.def)}</li>`).join('')}</ul>
         <div class="row center" style="margin-top:14px">
           <button class="btn teal" id="again">🔁 עוד תפזורת</button>
-          <button class="btn ghost" data-go="home">🏠 לדף הבית</button>
+          <button class="btn ghost" data-go="hebrew">${LULI_ICON} לאיזור של לולי</button>
         </div>
       </section>`);
       document.getElementById('again').onclick = wordsearchPlay; bindGo();
