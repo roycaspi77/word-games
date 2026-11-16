@@ -296,25 +296,12 @@ body.duv { background: linear-gradient(160deg, #fecdd3 0%, #fbcfe8 45%, #fde68a 
   display: flex; align-items: center; justify-content: center; font-family: var(--font-niqqud); font-size: 42px; font-weight: 700;
 }
 .duv-slot.filled { border-style: solid; border-color: #22c55e; background: #fff; animation: pop2 .3s; }
-.duv-target {
-  font-family: var(--font-niqqud); font-size: 72px; font-weight: 800; color: #fff; background: #e11d48;
-  width: 110px; height: 110px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 0 #9f1239;
+.duv-gap {
+  display: inline-block; min-width: 0.9em; padding: 0 6px; margin: 0 2px; border-radius: 12px;
+  background: #fef3c7; border: 3px dashed #f59e0b; color: #b45309; line-height: 1.2;
 }
-.balloon-area {
-  position: relative; height: 480px; max-height: 62vh; overflow: hidden; border-radius: 24px;
-  background: linear-gradient(#7dd3fc, #e0f2fe); box-shadow: var(--shadow); touch-action: manipulation;
-}
-.balloon {
-  position: absolute; bottom: -130px; width: 78px; height: 94px; border: 0; border-radius: 50% 50% 46% 46%;
-  font-family: var(--font-niqqud); font-size: 44px; font-weight: 800; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .25);
-  box-shadow: inset -10px -12px 0 rgba(0, 0, 0, .14); animation-name: rise; animation-timing-function: linear;
-  animation-fill-mode: forwards; transition: scale .15s, opacity .25s, filter .15s;
-}
-.balloon::after { content: ''; position: absolute; bottom: -34px; left: 50%; width: 2px; height: 34px; background: rgba(0, 0, 0, .35); }
-.balloon.nope { scale: .8; filter: grayscale(.7); }
-.balloon.popped { scale: 1.7; opacity: 0; }
-@keyframes rise { to { transform: translateY(-680px); } }
+.duv-found { color: #15803d; background: #dcfce7; border-radius: 10px; padding: 0 4px; }
+.duv-found.fix { color: #b91c1c; background: #fee2e2; }
 
 /* Luli's area (6th grade) */
 .tile-luli { background: linear-gradient(135deg, #c084fc, #db2777); }

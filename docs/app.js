@@ -30,7 +30,7 @@
     stats: {
       games: 0, memoryGames: 0, triviaGames: 0, flashSeen: 0, correct: 0, bestStreak: 0, perfectTrivia: 0, memoryBest: {},
       memoryThreeStars: 0, reverseGames: 0, wordsearchGames: 0, wordsFound: 0, searchHard: 0, searchNoHint: 0, early: 0, night: 0,
-      duvGames: 0, duvBuilt: 0, duvPopped: 0, duvPerfect: 0,
+      duvGames: 0, duvBuilt: 0, duvMissing: 0, duvPerfect: 0,
       engGames: 0, engPerfect: 0, engSpelled: 0, engTenseRight: 0,
     },
   };
@@ -252,7 +252,7 @@
     { id: 'duv1',     e: '🍒', t: 'חבר של דובדוב',      d: 'שיחקת באיזור של דובדוב',        v: () => st().duvGames, goal: 1 },
     { id: 'duvPerfect', e: '🌟', t: 'כוכב כיתה א\'',     d: 'הכול נכון במשחק של דובדוב',     v: () => st().duvPerfect, goal: 1 },
     { id: 'duvBuild25', e: '🧱', t: 'בנאי מילים',        d: 'בנית 25 מילים',                 v: () => st().duvBuilt, goal: 25 },
-    { id: 'duvPop50', e: '🎉', t: 'מפוצץ בלונים',        d: 'פוצצת 50 בלונים נכונים',        v: () => st().duvPopped, goal: 50 },
+    { id: 'duvMissing30', e: '🕵️', t: 'בלש אותיות',       d: 'מצאת 30 אותיות חסרות',          v: () => st().duvMissing, goal: 30 },
     { id: 'duv20',    e: '🧺', t: 'סל דובדבנים',         d: '20 משחקים באיזור של דובדוב',    v: () => st().duvGames, goal: 20 },
     // Noshnosh's area (English)
     { id: 'eng1',     e: '🌍', t: 'Hello World',          d: 'שיחקת באיזור של נושנוש',        v: () => st().engGames, goal: 1 },
@@ -288,7 +288,7 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvBalloons, english, engVocab, engSpell, engTense, engSignal, engRules };
+  const SCREENS = { home, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, english, engVocab, engSpell, engTense, engSignal, engRules };
   let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
@@ -883,7 +883,7 @@
     { id: 'duvFirst',    emoji: '<b class="emoji-letter">א</b>', title: 'באיזו אות מתחילה?', sub: 'מסתכלים על התמונה ובוחרים אות', tile: 'tile-cherry' },
     { id: 'duvRead',     emoji: '📖', title: 'קוראים ובוחרים',    sub: 'קוראים מילה ומוצאים תמונה',    tile: 'tile-pink' },
     { id: 'duvBuild',    emoji: '🧩', title: 'בונים מילה',        sub: 'מסדרים אותיות לפי הסדר',       tile: 'tile-orange' },
-    { id: 'duvBalloons', emoji: '🎈', title: 'בלונים של אותיות',  sub: 'מפוצצים בלונים עם האות',       tile: 'tile-blue' },
+    { id: 'duvMissing',  emoji: '🕵️', title: 'האות החסרה',        sub: 'איזו אות חסרה במילה? (מאתגר!)', tile: 'tile-blue' },
   ];
   const DUV_PRAISE = ['כל הכבוד! 🍒', 'נכון! 👏', 'יופי! 🌟', 'מעולה! 🎉', 'אלוף! 🏆'];
   const voiceOn = () => !!heVoice();
@@ -1048,49 +1048,56 @@
     show();
   }
 
-  // 4. pop the balloons that carry the target letter
-  function duvBalloons() {
-    const target = pick(KID_LETTERS);
-    const COUNT = 16, GAP = 1000, RISE = 7000;
-    const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6'];
-    let spawned = 0, targets = 0, popped = 0, misses = 0;
-    h(`<section>
-      <div class="panel center duv-card" style="padding:14px">
-        <div class="duv-ask">פוצצו את כל הבלונים עם האות</div>
-        <div class="row center"><span class="duv-target">${target}</span>${voiceOn() ? '<button class="icon-btn" id="sayB" aria-label="השמעה">🔊</button>' : ''}</div>
-        <div class="hud" style="margin:8px 0 0"><span>🎈 פוצצת: <b id="pp">0</b></span></div>
-      </div>
-      <div class="balloon-area" id="area"></div>
-    </section>`);
-    const area = document.getElementById('area');
-    const sb = document.getElementById('sayB');
-    if (sb) sb.onclick = () => say(LETTER_NAMES[target] || target, true);
-    later(() => say(`פוצצו את הבלונים עם האות ${LETTER_NAMES[target] || target}`, true), 300);
-    function spawn() {
-      const isT = Math.random() < 0.45 || COUNT - spawned <= 6 - targets; // at least 6 targets per round
-      const letter = isT ? target : pick(KID_LETTERS.filter(x => x !== target));
-      if (isT) targets++;
-      const b = document.createElement('button');
-      b.className = 'balloon'; b.textContent = letter;
-      b.style.left = (4 + Math.random() * 76) + '%';
-      b.style.background = pick(colors);
-      b.style.animationDuration = (RISE + Math.random() * 1500) + 'ms';
-      b.onclick = () => {
-        if (b.dataset.done) return;
-        if (letter === target) {
-          b.dataset.done = '1'; popped++; document.getElementById('pp').textContent = popped; sfx('good');
-          b.style.transform = getComputedStyle(b).transform; b.style.animation = 'none';
-          b.classList.add('popped');
-          setTimeout(() => b.remove(), 300);
-        } else { misses++; sfx('bad'); b.classList.add('nope'); setTimeout(() => b.classList.remove('nope'), 350); }
-      };
-      b.addEventListener('animationend', e => { if (e.animationName === 'rise') b.remove(); });
-      area.appendChild(b);
-      spawned++;
-      if (spawned < COUNT) later(spawn, GAP);
-      else later(() => { S.stats.duvPopped += popped; duvResult(popped, targets, duvBalloons); }, RISE + 1800);
+  // 4. the missing letter: a letter is hidden anywhere in the word (not only the first),
+  //    and the wrong options are letters that look or sound alike – the harder game of the area
+  const CONFUSABLE = {
+    'א': 'עה', 'ב': 'כפו', 'ג': 'זנ', 'ד': 'רת', 'ה': 'חא', 'ו': 'זיב', 'ז': 'וג', 'ח': 'הכת', 'ט': 'תמ', 'י': 'ו',
+    'כ': 'בקח', 'ל': 'ר', 'מ': 'נט', 'נ': 'מג', 'ס': 'שצ', 'ע': 'אצ', 'פ': 'בכ', 'צ': 'סע', 'ק': 'כ', 'ר': 'דל', 'ש': 'ס', 'ת': 'טד',
+  };
+  const FINALS = 'ךםןףץ';
+  function duvMissing() {
+    const qs = shuffle(KIDS.filter(k => k.parts.length >= 3)).slice(0, 10), results = [];
+    let i = 0;
+    function show() {
+      const w = qs[i];
+      // never hide a final letter (ך ם ן ף ץ); prefer a letter that is not the first one
+      const spots = w.parts.map((_, k) => k).filter(k => !FINALS.includes(w.parts[k][0]));
+      const later2 = spots.filter(k => k > 0);
+      const k = pick(later2.length ? later2 : spots);
+      const L = w.parts[k][0];
+      const alike = shuffle([...(CONFUSABLE[L] || '')].filter(x => x !== L)).slice(0, 2);
+      const others = shuffle(KID_LETTERS.filter(x => x !== L && !alike.includes(x))).slice(0, 3 - alike.length);
+      const opts = shuffle([L, ...alike, ...others]);
+      const wordWithGap = w.parts.map((p, j) => j === k ? '<span class="duv-gap">?</span>' : p).join('');
+      h(`<section><div class="panel center duv-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="duv-ask">איזו אות חסרה במילה?</div>
+        <div class="duv-pic">${w.e}</div>
+        <div class="duv-word big" id="dw">${wordWithGap}</div>
+        ${voiceOn() ? '<button class="btn ghost small" id="sayB">🔊 שמעו את המילה</button>' : ''}
+        <div class="duv-opts">${opts.map(o => `<button class="duv-letter" data-o="${o}">${o}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const sb = document.getElementById('sayB'); if (sb) sb.onclick = () => say(w.w, true);
+      const btns = [...$app.querySelectorAll('.duv-letter')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = b.dataset.o === L;
+        results.push(ok);
+        if (ok) S.stats.duvMissing++;
+        save();
+        document.getElementById('dw').innerHTML = w.parts.map((p, j) => j === k ? `<span class="duv-found ${ok ? '' : 'fix'}">${p}</span>` : p).join('');
+        if (ok) { b.classList.add('right'); sfx('good'); document.getElementById('fb').textContent = pick(DUV_PRAISE); }
+        else {
+          b.classList.add('wrong'); sfx('bad');
+          btns.find(x => x.dataset.o === L).classList.add('right');
+          document.getElementById('fb').textContent = `חסרה האות ${L} (${strip(LETTER_NAMES[L] || L)})`;
+        }
+        say(w.w, true);
+        later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvMissing); }, ok ? 1600 : 3000);
+      });
     }
-    later(spawn, 900);
+    show();
   }
 
   // ===== Noshnosh's area (האיזור של נושנוש): English for 8th grade =====

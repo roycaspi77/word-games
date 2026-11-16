@@ -16,7 +16,7 @@ The home screen has three areas plus achievements:
   - *באיזו אות מתחילה?*: see a picture (and hear the word) and pick its first letter out of 3.
   - *קוראים ובוחרים*: read a word with niqqud and pick its picture out of 3.
   - *בונים מילה*: tap the letters (each keeps its niqqud) in order to build the word under the picture. It has a hint button.
-  - *בלונים של אותיות*: pop the rising balloons that carry the target letter.
+  - *האות החסרה* (the hardest one): a letter is missing from the middle or end of the word, and the wrong options are look-alike or sound-alike letters (ב/כ/פ, ד/ר, ה/ח/א, ו/ז, ס/ש, ט/ת...).
   - It reads words and letter names aloud when the device has a Hebrew voice.
 - **🌍 האיזור של נושנוש**: English for 8th grade, with its data in `docs/english-data.js`:
   - *אוצר מילים*: English → Hebrew or Hebrew → English, 3 options, using the 29 vocabulary words.
