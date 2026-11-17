@@ -359,7 +359,7 @@ body.ten { background: linear-gradient(160deg, #fed7aa 0%, #fde68a 45%, #fecaca 
 @media (min-width: 900px) {
   main:has(.read-layout) { max-width: 1200px; }
   .read-layout { grid-template-columns: 1fr 1fr; align-items: start; }
-  .read-layout > .panel:first-child { position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .read-layout > .read-text, .read-layout > .checks-panel { position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow-y: auto; }
 }
 .read-text { text-align: left; }
 .read-text h2 { text-align: left; }
