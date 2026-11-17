@@ -24,6 +24,12 @@ The home screen has three areas plus achievements:
   - *הווה פשוט או מתמשך?*: complete 10 sentences (5 of each tense) by choosing or typing. Each answer shows why.
   - *מילות זמן*: decide whether a time expression goes with Present Simple or Present Progressive.
   - *תזכורת כללים*: a rules card covering when to use each tense, how to build it, spelling rules, time words and stative verbs.
+- **🏀 האיזור של יובלולו**: English for 10th grade, built on the Israeli Ministry of Education curriculum, with its data in `docs/tenth-data.js` and all texts original:
+  - *אוצר מילים*: 46 words from Band III (Core 1) List A. Two modes: the meaning, or completing a sentence in context.
+  - *דקדוק*: 42 items over Present Perfect/Past Simple, Passive, Conditionals, Reported Speech, Relative Clauses and Modals. Each answer has a Hebrew explanation.
+  - *הבנת הנקרא*: 3 passages in the Module C format (article, human-interest, review) with 7 questions each: multiple choice, referents, sentence completion and a find-the-word question. The relevant paragraph is highlighted after each answer.
+  - *כתיבה*: 6 Module C tasks (opinion, description, informal letter, 70–90 words). A live checklist based on the Bagrut rubric, phrase buttons, saved drafts, plus a linking-words quiz.
+  - *הבנת הנשמע*: 4 clips in the oral exam's listening format (COBE), read aloud with a slow option and a transcript at the end, plus dictation with word-by-word marking.
 - **📖 Dictionary**: search, favourites ⭐, "hard words" and "mastered" filters, and read-aloud when the device has a Hebrew voice.
 - **🏆 Achievements**: stars, 40 badges with progress bars, a streak of days in a row, and how many words are mastered. A word counts as mastered after 3 right answers in a row.
 - **Word of the day** on the home screen, plus settings for the child's name and sound.

@@ -32,6 +32,7 @@
       memoryThreeStars: 0, reverseGames: 0, wordsearchGames: 0, wordsFound: 0, searchHard: 0, searchNoHint: 0, early: 0, night: 0,
       duvGames: 0, duvBuilt: 0, duvMissing: 0, duvPerfect: 0,
       engGames: 0, engPerfect: 0, engSpelled: 0, engTenseRight: 0,
+      tenGames: 0, tenPerfect: 0, tenGrammarRight: 0, tenWritten: 0, tenDictRight: 0,
     },
   };
   let S = load();
@@ -260,7 +261,14 @@
     { id: 'engTense50', e: '⏱️', t: 'אדון הזמנים',        d: '50 תשובות נכונות ב-Simple / Progressive', v: () => st().engTenseRight, goal: 50 },
     { id: 'engSpell20', e: '🔡', t: 'Spelling Bee',       d: 'איית נכון 20 מילים באנגלית',    v: () => st().engSpelled, goal: 20 },
     { id: 'eng20',    e: '🗽', t: 'דובר אנגלית',          d: '20 משחקים באיזור של נושנוש',    v: () => st().engGames, goal: 20 },
-    // habits and stars
+    // 10th-grade English area
+    { id: 'ten1',      e: '🏀', t: 'Slam Dunk',          d: 'שיחקת באיזור של יובלולו',       v: () => st().tenGames, goal: 1 },
+    { id: 'tenGram50', e: '🧩', t: 'Grammar Pro',        d: '50 תשובות נכונות בדקדוק',        v: () => st().tenGrammarRight, goal: 50 },
+    { id: 'tenReader', e: '📖', t: 'קורא מצטיין',        d: 'פתרת את כל קטעי הקריאה',        v: () => Object.keys(S.tenRead || {}).length, goal: (window.TEN_READING || []).length },
+    { id: 'tenWriter', e: '✍️', t: 'סופר צעיר',          d: 'כתבת חיבור שעומד בכל הדרישות',   v: () => st().tenWritten, goal: 1 },
+    { id: 'tenListen', e: '🎧', t: 'אוזן קשבת',          d: 'האזנת לכל הקטעים',               v: () => Object.keys(S.tenClips || {}).length, goal: (window.TEN_LISTENING || []).length },
+    { id: 'tenDict20', e: '📝', t: 'כתבן מהיר',          d: '20 משפטי הכתבה בלי טעויות',      v: () => st().tenDictRight, goal: 20 },
+    { id: 'ten20',     e: '🏆', t: 'MVP',                d: '20 משחקים באיזור של יובלולו',   v: () => st().tenGames, goal: 20 },    // habits and stars
     { id: 'days3',    e: '📅', t: 'מתמיד',               d: 'שיחקת 3 ימים ברצף',             v: dayStreak, goal: 3 },
     { id: 'days7',    e: '🏅', t: 'שבוע של מילים',       d: 'שיחקת 7 ימים ברצף',             v: dayStreak, goal: 7 },
     { id: 'days14',   e: '🥈', t: 'שבועיים בלי הפסקה',   d: 'שיחקת 14 ימים ברצף',            v: dayStreak, goal: 14 },
@@ -288,7 +296,7 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, english, engVocab, engSpell, engTense, engSignal, engRules };
+  const SCREENS = { home, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
   let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
@@ -298,7 +306,11 @@
     document.body.classList.toggle('eng', name === 'english' || name.startsWith('eng'));
     backTo = name.startsWith('duv') && name !== 'duvduv' ? '#duvduv'
       : name.startsWith('eng') && name !== 'english' ? '#english'
+      : name.startsWith('ten') && name !== 'tenth' ? '#tenth'
       : LULI_SCREENS.includes(name) && name !== 'hebrew' ? '#hebrew' : '#home';
+    if (location.hash.includes('?')) backTo = '#' + name; // sub-pages (a passage, a clip, a task) go back to their list
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    document.body.classList.toggle('ten', name.startsWith('ten'));
     document.getElementById('backBtn').hidden = fn === home;
     fn();
     scrollTo(0, 0);
@@ -327,6 +339,7 @@
         <button class="game-tile tile-luli" data-go="hebrew"><span class="emoji">${LULI_ICON}</span><span class="title">האיזור של לולי</span><span class="sub">משחקי עברית לכיתה ו'</span></button>
         <button class="game-tile tile-cherry" data-go="duvduv"><span class="emoji">🍒</span><span class="title">האיזור של דובדוב</span><span class="sub">משחקי עברית לכיתה א'</span></button>
         <button class="game-tile tile-indigo" data-go="english"><span class="emoji">${ENG_ICON}</span><span class="title">האיזור של נושנוש</span><span class="sub">אנגלית לכיתה ח'</span></button>
+        <button class="game-tile tile-ball" data-go="tenth"><span class="emoji">${TEN_ICON}</span><span class="title">האיזור של יובלולו</span><span class="sub">אנגלית לכיתה י'</span></button>
         <button class="game-tile tile-blue" data-go="badges"><span class="emoji">🏆</span><span class="title">הישגים</span><span class="sub">${S.badges.length} מתוך ${BADGES.length} תגים</span></button>
       </div>
       <div class="row center" style="margin-top:18px"><button class="btn ghost small" data-go="settings">⚙️ הגדרות</button></div>
@@ -1456,6 +1469,513 @@
       <div class="row center"><button class="btn purple" data-go="engTense">⏱️ לתרגל עכשיו</button></div>
     </section>`);
     bindGo();
+  }
+
+  // ===== 10th-grade English area (האיזור של יובלולו) =====
+  // Built on the Israeli curriculum: Band III vocabulary, Bagrut Module C reading/writing, COBE-style listening.
+  const TEN_ICON = '🏀';
+  const TEN_VOCAB = (window.TEN_VOCAB || []).map(([en, pos, he, ex]) => ({ en, pos, he, ex }));
+  const TEN_GRAMMAR = (window.TEN_GRAMMAR || []).map(([topic, s, a, wrong, why]) => ({ topic, s, a, wrong, why }));
+  const TEN_TOPICS = window.TEN_TOPICS || {};
+  const TEN_LINKERS = (window.TEN_LINKERS || []).map(([s, a, wrong, why]) => ({ s, a, wrong, why }));
+  const TEN_READING = window.TEN_READING || [];
+  const TEN_LISTENING = window.TEN_LISTENING || [];
+  const TEN_DICTATION = window.TEN_DICTATION || [];
+  const TEN_WRITING = window.TEN_WRITING || [];
+  const TEN_PHRASES = window.TEN_PHRASES || {};
+  const TEN_LINKING = window.TEN_LINKING_WORDS || [];
+  const TEN_GAMES = [
+    { id: 'tenVocab',     emoji: '📚', title: 'אוצר מילים',   sub: 'Band III – מילים מתוכנית הלימודים', tile: 'tile-blue' },
+    { id: 'tenGrammar',   emoji: '🧩', title: 'דקדוק',        sub: 'זמנים, סביל, תנאי, דיבור עקיף ועוד', tile: 'tile-purple' },
+    { id: 'tenReading',   emoji: '📖', title: 'הבנת הנקרא',   sub: 'קטעים ושאלות בסגנון מודול C',       tile: 'tile-green' },
+    { id: 'tenWriting',   emoji: '✍️', title: 'כתיבה',        sub: 'חיבור של 70–90 מילים ומילות קישור',  tile: 'tile-pink' },
+    { id: 'tenListening', emoji: '🎧', title: 'הבנת הנשמע',   sub: 'מקשיבים ועונים, וגם הכתבה',          tile: 'tile-teal' },
+  ];
+  const qp = k => new URLSearchParams(location.hash.split('?')[1] || '').get(k);
+  const S2 = () => { ['tenRead', 'tenClips', 'tenDone', 'tenDrafts'].forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; }); return S; };
+
+  // long texts are spoken sentence by sentence (browsers cut off long utterances)
+  function speakLong(text, rate, onend) {
+    const v = enVoice(); if (!v) return false;
+    speechSynthesis.cancel();
+    const parts = text.match(/[^.!?]+[.!?]+["']?\s*/g) || [text];
+    parts.forEach((p, k) => {
+      const u = new SpeechSynthesisUtterance(p.trim()); u.voice = v; u.lang = v.lang; u.rate = rate;
+      if (k === parts.length - 1 && onend) u.onend = onend;
+      speechSynthesis.speak(u);
+    });
+    return true;
+  }
+
+  function tenth() {
+    h(`<section>
+      <div class="panel ten-hero">
+        <div class="eng-mascot">${TEN_ICON}</div>
+        <div>
+          <h1>האיזור של יובלולו</h1>
+          <div>אנגלית לכיתה י' – לפי תוכנית הלימודים ומבנה הבגרות</div>
+        </div>
+      </div>
+      <div class="game-grid">
+        ${TEN_GAMES.map(g => `<button class="game-tile ${g.tile}" data-go="${g.id}"><span class="emoji">${g.emoji}</span><span class="title">${g.title}</span><span class="sub">${g.sub}</span></button>`).join('')}
+      </div>
+    </section>`);
+    bindGo();
+  }
+
+  function tenResult(right, total, again, review, extraHtml) {
+    const stars = right >= total * 0.9 ? 3 : right >= total * 0.6 ? 2 : right > 0 ? 1 : 0;
+    addStars(right);
+    S.stats.tenGames++;
+    if (right === total && total >= 4) S.stats.tenPerfect++;
+    markPlayed(); save();
+    sfx(stars >= 2 ? 'win' : 'good'); if (stars >= 2) confetti();
+    const msg = right === total ? 'Perfect! מושלם 🤩' : stars === 3 ? 'Excellent! מצוין 🎉' : stars === 2 ? 'Well done! כל הכבוד 👏' : 'Keep practicing! ממשיכים להתאמן 💪';
+    h(`<section class="panel center">
+      <div class="eng-mascot">${TEN_ICON}</div>
+      <h1>${msg}</h1>
+      <div class="result-stars">${[1, 2, 3].map(k => `<span class="${k <= stars ? '' : 'off'}">⭐</span>`).join('')}</div>
+      <p style="font-size:20px">הצלחת <b>${right}</b> מתוך ${total} · קיבלת <b>${right}</b> כוכבים</p>
+      ${review && review.length ? `<div class="label" style="text-align:right">לחזור על:</div><ul class="mistakes">${review.map(x => `<li><span class="en">${esc(x.en)}</span>${x.he ? ` – <b class="en">${esc(x.he)}</b>` : ''}</li>`).join('')}</ul>` : ''}
+      ${extraHtml || ''}
+      <div class="row center" style="margin-top:12px">
+        <button class="btn ball" id="again">🔁 עוד פעם</button>
+        <button class="btn ghost" data-go="tenth">${TEN_ICON} לאיזור של יובלולו</button>
+      </div>
+    </section>`);
+    document.getElementById('again').onclick = again; bindGo();
+    checkBadges();
+  }
+
+  // a multiple-choice question with an explanation and a "next" button (grammar, linking words)
+  function tenMcRound(items, makeQ, onDone) {
+    const results = [], review = [];
+    let i = 0;
+    function show() {
+      const q = makeQ(items[i]);
+      const opts = shuffle([q.a, ...q.wrong]);
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, items.length)}
+        ${q.tag ? `<div class="q-ask"><span class="tense-tag tS">${esc(q.tag)}</span></div>` : ''}
+        <div class="q-ask">בחרו את התשובה הנכונה:</div>
+        <div class="sentence en" id="sent">${esc(q.s).replace('___', '<span class="blank">' + '&nbsp;'.repeat(10) + '</span>')}</div>
+        <div class="answers">${opts.map((o, k) => `<button class="answer en" data-k="${k}">${esc(o)}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+        <div class="why" id="why" hidden></div>
+        <button class="btn ball" id="next" hidden>הבא ⬅️</button>
+      </div></section>`);
+      const btns = [...$app.querySelectorAll('.answer')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = opts[+b.dataset.k] === q.a;
+        results.push(ok);
+        if (!ok) review.push({ en: q.s.replace('___', q.a), he: '' });
+        b.classList.add(ok ? 'right' : 'wrong');
+        if (!ok) btns[opts.indexOf(q.a)].classList.add('right');
+        sfx(ok ? 'good' : 'bad');
+        document.getElementById('sent').innerHTML = esc(q.s).replace('___', `<span class="blank ${ok ? 'ok' : 'fix'}">${esc(q.a)}</span>`);
+        document.getElementById('fb').textContent = ok ? pick(EN_PRAISE) : 'Not this time 🙂';
+        const why = document.getElementById('why'); why.hidden = false; why.textContent = '💡 ' + q.why;
+        const next = document.getElementById('next'); next.hidden = false; next.focus();
+        next.onclick = () => { i++; i < items.length ? show() : onDone(results.filter(Boolean).length, items.length, review); };
+      });
+    }
+    show();
+  }
+
+  // 1. vocabulary
+  let tenVocabMode = 'meaning';
+  function tenVocab() {
+    h(`<section class="panel">
+      <h2>📚 אוצר מילים – Band III</h2>
+      <p>מילים מרשימה A של Band III (Core 1) בתוכנית הלימודים של משרד החינוך. 10 שאלות.</p>
+      <div class="chips">
+        <button class="chip ${tenVocabMode === 'meaning' ? 'on' : ''}" data-m="meaning">🔤 מה הפירוש?</button>
+        <button class="chip ${tenVocabMode === 'context' ? 'on' : ''}" data-m="context">📝 השלמת משפט (מאתגר)</button>
+      </div>
+      <button class="btn ball" id="go">Let's go! 🏀</button>
+    </section>`);
+    $app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { tenVocabMode = b.dataset.m; sfx('tap'); tenVocab(); });
+    document.getElementById('go').onclick = tenVocabPlay;
+  }
+  function tenVocabPlay() {
+    const qs = shuffle(TEN_VOCAB).slice(0, 10), results = [], review = [];
+    const ctx = tenVocabMode === 'context';
+    let i = 0;
+    function show() {
+      const w = qs[i];
+      // in context mode the distractors are other parts of speech, so only one option can fit the sentence
+      // (same-type words such as feature / characteristic or significant / considerable would both fit)
+      const diff = shuffle(TEN_VOCAB.filter(x => x !== w && x.pos !== w.pos)).slice(0, 3);
+      const opts = shuffle([w, ...(ctx ? diff : shuffle(TEN_VOCAB.filter(x => x !== w)).slice(0, 3))]);
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">${ctx ? 'איזו מילה משלימה את המשפט?' : 'מה פירוש המילה?'}</div>
+        ${ctx ? `<div class="sentence en" id="sent">${esc(w.ex).replace('___', '<span class="blank">' + '&nbsp;'.repeat(10) + '</span>')}</div>`
+              : `<div class="q-word en">${esc(w.en)}</div>${enSpeakBtn('sayB')}`}
+        <div class="answers">${opts.map((o, k) => `<button class="answer ${ctx ? 'en' : ''}" data-k="${k}">${esc(ctx ? o.en : o.he)}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const sb = document.getElementById('sayB'); if (sb) sb.onclick = () => sayEn(w.en);
+      if (!ctx) later(() => sayEn(w.en), 250);
+      const btns = [...$app.querySelectorAll('.answer')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = opts[+b.dataset.k] === w;
+        results.push(ok); if (!ok) review.push({ en: w.en, he: w.he });
+        b.classList.add(ok ? 'right' : 'wrong'); if (!ok) btns[opts.indexOf(w)].classList.add('right');
+        sfx(ok ? 'good' : 'bad');
+        if (ctx) document.getElementById('sent').innerHTML = esc(w.ex).replace('___', `<span class="blank ${ok ? 'ok' : 'fix'}">${esc(w.en)}</span>`);
+        document.getElementById('fb').innerHTML = `<span class="en">${esc(w.en)}</span> = ${esc(w.he)}`;
+        later(() => { i++; i < qs.length ? show() : tenResult(results.filter(Boolean).length, qs.length, tenVocabPlay, review); }, ok ? 1500 : 2800);
+      });
+    }
+    show();
+  }
+
+  // 2. grammar
+  let tenTopic = 'mix';
+  function tenGrammar() {
+    h(`<section class="panel">
+      <h2>🧩 דקדוק</h2>
+      <p>הנושאים שלומדים לקראת הבגרות. אחרי כל תשובה מופיע הסבר.</p>
+      <div class="chips">
+        <button class="chip ${tenTopic === 'mix' ? 'on' : ''}" data-t="mix">🎲 מעורבב</button>
+        ${Object.entries(TEN_TOPICS).map(([k, l]) => `<button class="chip en ${tenTopic === k ? 'on' : ''}" data-t="${k}">${esc(l)}</button>`).join('')}
+      </div>
+      <button class="btn ball" id="go">Let's go! 🏀</button>
+    </section>`);
+    $app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { tenTopic = b.dataset.t; sfx('tap'); tenGrammar(); });
+    document.getElementById('go').onclick = tenGrammarPlay;
+  }
+  function tenGrammarPlay() {
+    const pool = tenTopic === 'mix' ? TEN_GRAMMAR : TEN_GRAMMAR.filter(g => g.topic === tenTopic);
+    const items = shuffle(pool).slice(0, tenTopic === 'mix' ? 10 : 7);
+    tenMcRound(items, g => ({ s: g.s, a: g.a, wrong: g.wrong, why: g.why, tag: tenTopic === 'mix' ? TEN_TOPICS[g.topic] : '' }),
+      (right, total, review) => { S.stats.tenGrammarRight += right; tenResult(right, total, tenGrammarPlay, review); });
+  }
+
+  // 3. reading comprehension
+  function tenReading() {
+    const idx = qp('p');
+    if (idx !== null && TEN_READING[+idx]) return tenReadPlay(+idx);
+    const done = S2().tenRead;
+    h(`<section>
+      <div class="panel">
+        <h2>📖 הבנת הנקרא</h2>
+        <p>קטע באורך של עד 300 מילים ו-7 שאלות, כמו במודול C: בחירה מרובה, השלמת משפט, הפניה (למה מתייחסת מילה) ומציאת מילה בטקסט.</p>
+      </div>
+      ${TEN_READING.map((r, k) => `<button class="panel pick-row" data-p="${k}">
+        <span class="en pick-title">${esc(r.title)}</span>
+        <span class="muted en">${esc(r.type)}</span>
+        ${done[k] !== undefined ? `<span class="badge-m">${done[k]}/${r.qs.length}</span>` : ''}
+      </button>`).join('')}
+    </section>`);
+    $app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { sfx('tap'); location.hash = '#tenReading?p=' + b.dataset.p; });
+  }
+  function tenReadPlay(idx) {
+    const r = TEN_READING[idx], results = [], review = [];
+    let i = 0;
+    h(`<section>
+      <div class="read-layout">
+        <div class="panel read-text en" id="txt">
+          <h2>${esc(r.title)}</h2>
+          ${r.paras.map((p, k) => `<p class="para" data-n="${k + 1}"><span class="pnum">${k + 1}</span>${esc(p)}</p>`).join('')}
+        </div>
+        <div id="qbox"></div>
+      </div>
+    </section>`);
+    const qbox = document.getElementById('qbox');
+    const paras = [...$app.querySelectorAll('.para')];
+    function show() {
+      const q = r.qs[i];
+      paras.forEach(p => p.classList.remove('hl'));
+      const opts = q.t === 'mc' ? shuffle(q.o) : null;
+      qbox.innerHTML = `<div class="panel q-card read-q">
+        ${duvDots(results, i, r.qs.length)}
+        <div class="sentence en small">${esc(q.q)}</div>
+        ${q.t === 'mc'
+          ? `<div class="answers">${opts.map((o, k) => `<button class="answer en" data-k="${k}">${esc(o)}</button>`).join('')}</div>`
+          : `<input class="search en spell-input" id="ans" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type the word..." dir="ltr">
+             <div class="row center" style="margin-top:12px"><button class="btn ball" id="check">בדיקה ✔️</button></div>`}
+        <div class="feedback" id="fb"></div>
+        <button class="btn ball" id="next" hidden>הבא ⬅️</button>
+      </div>`;
+      const fb = document.getElementById('fb');
+      const finish = (ok, correctText) => {
+        results.push(ok); if (!ok) review.push({ en: q.q, he: correctText });
+        sfx(ok ? 'good' : 'bad');
+        fb.innerHTML = ok ? pick(EN_PRAISE) : `התשובה: <b class="en">${esc(correctText)}</b>`;
+        if (q.p) { const p = paras[q.p - 1]; p.classList.add('hl'); p.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+        const next = document.getElementById('next'); next.hidden = false;
+        next.onclick = () => {
+          i++;
+          if (i < r.qs.length) return show();
+          const right = results.filter(Boolean).length;
+          S2().tenRead[idx] = Math.max(S.tenRead[idx] || 0, right);
+          tenResult(right, r.qs.length, () => tenReadPlay(idx), review);
+        };
+      };
+      if (q.t === 'mc') {
+        const btns = [...qbox.querySelectorAll('.answer')];
+        btns.forEach(b => b.onclick = () => {
+          btns.forEach(x => x.disabled = true);
+          const ok = opts[+b.dataset.k] === q.o[0];
+          b.classList.add(ok ? 'right' : 'wrong'); if (!ok) btns[opts.indexOf(q.o[0])].classList.add('right');
+          finish(ok, q.o[0]);
+        });
+      } else {
+        const input = document.getElementById('ans');
+        const check = () => {
+          const v = normEn(input.value); if (!v) return;
+          input.disabled = true; document.getElementById('check').disabled = true;
+          const ok = q.a.some(a => normEn(a) === v);
+          input.classList.add(ok ? 'ok' : 'bad');
+          finish(ok, q.a[0]);
+        };
+        document.getElementById('check').onclick = check;
+        input.onkeydown = e => { if (e.key === 'Enter' && !input.disabled) check(); };
+      }
+    }
+    show();
+  }
+
+  // 4. writing
+  function tenWriting() {
+    const w = qp('w');
+    if (w !== null && TEN_WRITING[+w]) return tenWriteTask(+w);
+    if (qp('l')) return tenLinkersPlay();
+    const done = S2().tenDone;
+    const kindHe = { opinion: 'הבעת דעה', description: 'תיאור', letter: 'מכתב / מייל' };
+    h(`<section>
+      <div class="panel">
+        <h2>✍️ כתיבה</h2>
+        <p>כמו במודול C: כותבים 70–90 מילים – הבעת דעה, תיאור או מכתב אישי. המאמן בודק את הדברים שנבדקים במחוון: אורך, ארגון, מילות קישור, אוצר מילים ושימוש נכון בשפה.</p>
+        <button class="btn ball" id="link">🔗 תרגול מילות קישור</button>
+      </div>
+      ${TEN_WRITING.map((t, k) => `<button class="panel pick-row" data-w="${k}">
+        <span class="tense-tag tP">${kindHe[t.kind]}</span>
+        <span class="en pick-title">${esc(t.title)}</span>
+        ${done[k] ? '<span class="badge-m">✓ הושלם</span>' : (S.tenDrafts[k] ? '<span class="badge-h">טיוטה</span>' : '')}
+      </button>`).join('')}
+    </section>`);
+    document.getElementById('link').onclick = () => { sfx('tap'); location.hash = '#tenWriting?l=1'; };
+    $app.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { sfx('tap'); location.hash = '#tenWriting?w=' + b.dataset.w; });
+  }
+  function tenLinkersPlay() {
+    tenMcRound(shuffle(TEN_LINKERS).slice(0, 10), l => l, (right, total, review) => tenResult(right, total, tenLinkersPlay, review));
+  }
+  function tenWriteChecks(t, text) {
+    const words = text.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g) || [];
+    const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => /[A-Za-z]/.test(s));
+    const lower = ' ' + text.toLowerCase().replace(/[^a-z' ]+/g, ' ') + ' ';
+    const linkers = [...new Set(TEN_LINKING.filter(l => lower.includes(' ' + l + ' ')))];
+    const band = TEN_VOCAB.filter(v => lower.includes(' ' + v.en.toLowerCase() + ' ') || lower.includes(' ' + v.en.toLowerCase() + 's ') || lower.includes(' ' + v.en.toLowerCase() + 'd '));
+    const capsOk = sentences.length > 0 && sentences.every(s => /^["'(]?[A-Z0-9]/.test(s));
+    const checks = [
+      { ok: words.length >= 70 && words.length <= 90, label: `אורך: 70–90 מילים (עכשיו ${words.length})`, core: true },
+      { ok: sentences.length >= 5, label: `לפחות 5 משפטים (עכשיו ${sentences.length})`, core: true },
+      { ok: linkers.length >= 3, label: `לפחות 3 מילות קישור שונות (${linkers.length}${linkers.length ? ': ' + linkers.slice(0, 5).join(', ') : ''})`, core: true },
+      { ok: capsOk, label: 'כל משפט מתחיל באות גדולה', core: true },
+      { ok: words.length > 0 && !/(^|[^A-Za-z'])i([^A-Za-z']|$)/.test(text), label: 'כותבים I באות גדולה', core: true },
+    ];
+    if (t.kind === 'letter') {
+      checks.push({ ok: /^\s*(dear|hi|hello|hey)\b/i.test(text), label: 'פתיחה של מכתב (Dear / Hi ...)', core: true });
+      const lastLines = text.trim().split('\n').filter(l => l.trim()).slice(-2).join(' ');
+      checks.push({ ok: /\b(best wishes|love|see you|yours|bye|take care|regards|best|cheers|talk soon)\b/i.test(lastLines), label: 'סיום של מכתב (Best wishes / See you ...)', core: true });
+    }
+    if (t.kind === 'opinion') checks.push({ ok: /\b(i think|i believe|in my opinion|i feel|personally|i agree|i disagree)\b/i.test(text), label: 'מביעים דעה (In my opinion / I believe ...)', core: true });
+    if (t.kind === 'description') checks.push({ ok: /\b(felt|feel|was|were|remember)\b/i.test(text), label: 'מתארים מה קרה ואיך הרגשתם', core: true });
+    checks.push({ ok: band.length >= 2, label: `בונוס: לפחות 2 מילים מ-Band III (${band.map(b => b.en).slice(0, 4).join(', ') || 'אין עדיין'})`, core: false });
+    return checks;
+  }
+  function tenWriteTask(k) {
+    const t = TEN_WRITING[k];
+    const kindHe = { opinion: 'הבעת דעה', description: 'תיאור', letter: 'מכתב / מייל' };
+    h(`<section>
+      <div class="read-layout">
+        <div class="panel">
+          <span class="tense-tag tP">${kindHe[t.kind]}</span>
+          <h2 class="en" style="margin-top:8px">${esc(t.title)}</h2>
+          <p class="en task">${esc(t.task)}</p>
+          <div class="label">ביטויים שימושיים (לחיצה מוסיפה לטקסט):</div>
+          <div class="chips">${(TEN_PHRASES[t.kind] || []).map(p => `<button class="chip en" data-ph="${esc(p)}">${esc(p)}</button>`).join('')}</div>
+          <textarea id="essay" class="essay en" dir="ltr" spellcheck="true" placeholder="Start writing here...">${esc(S2().tenDrafts[k] || '')}</textarea>
+          <div class="row" style="margin-top:10px">
+            <button class="btn ball" id="done">סיימתי ✔️</button>
+            <button class="btn ghost small" id="copy">📋 העתקה</button>
+          </div>
+          <div class="feedback" id="fb"></div>
+        </div>
+        <div class="panel checks-panel">
+          <div class="label">✅ בדיקה לפי המחוון</div>
+          <ul class="checks" id="checks"></ul>
+          <p class="muted" style="font-size:14px">המחוון בבגרות בודק: תוכן וארגון, אוצר מילים ושימוש בשפה. כדאי לבנות פתיחה, גוף וסיום.</p>
+        </div>
+      </div>
+    </section>`);
+    const ta = document.getElementById('essay');
+    const render = () => {
+      const checks = tenWriteChecks(t, ta.value);
+      document.getElementById('checks').innerHTML = checks.map(c => `<li class="${c.ok ? 'ok' : ''} ${c.core ? '' : 'bonus'}">${c.ok ? '✅' : '⬜'} ${esc(c.label)}</li>`).join('');
+      return checks;
+    };
+    let saveT;
+    ta.oninput = () => { render(); clearTimeout(saveT); saveT = setTimeout(() => { S2().tenDrafts[k] = ta.value; save(); }, 600); };
+    render();
+    $app.querySelectorAll('[data-ph]').forEach(b => b.onclick = () => {
+      const s = ta.selectionStart ?? ta.value.length, e = ta.selectionEnd ?? ta.value.length;
+      const before = ta.value.slice(0, s), ins = (before && !/\s$/.test(before) ? ' ' : '') + b.dataset.ph + ' ';
+      ta.value = before + ins + ta.value.slice(e);
+      ta.focus(); ta.selectionStart = ta.selectionEnd = s + ins.length; ta.oninput(); sfx('tap');
+    });
+    document.getElementById('copy').onclick = async () => {
+      try { await navigator.clipboard.writeText(ta.value); toast('הטקסט הועתק 📋'); } catch (e) { ta.select(); toast('סמנו והעתיקו ידנית'); }
+    };
+    document.getElementById('done').onclick = () => {
+      const checks = render();
+      const missing = checks.filter(c => c.core && !c.ok);
+      S2().tenDrafts[k] = ta.value;
+      const fb = document.getElementById('fb');
+      if (missing.length) { sfx('bad'); fb.textContent = `עוד ${missing.length} דברים לתקן ברשימה 🙂`; save(); return; }
+      const bonus = checks.find(c => !c.core).ok;
+      const first = !S.tenDone[k];
+      S.tenDone[k] = true;
+      if (first) { S.stats.tenWritten++; addStars(bonus ? 8 : 5); markPlayed(); }
+      save(); sfx('win'); confetti();
+      fb.textContent = first ? `מצוין! הטקסט עומד בכל הדרישות – קיבלת ${bonus ? 8 : 5} כוכבים 🎉` : 'מצוין! הטקסט עומד בכל הדרישות 🎉';
+      checkBadges();
+    };
+  }
+
+  // 5. listening
+  let tenSlow = false;
+  function tenListening() {
+    const c = qp('c');
+    if (c !== null && TEN_LISTENING[+c]) return tenClip(+c);
+    if (qp('d')) return tenDictation();
+    const done = S2().tenClips;
+    const voice = !!enVoice();
+    h(`<section>
+      <div class="panel">
+        <h2>🎧 הבנת הנשמע</h2>
+        <p>כמו בחלק ההאזנה בבגרות בעל-פה: מקשיבים לקטע ועונים על שאלות. אפשר להקשיב כמה פעמים שרוצים, וגם לאט.</p>
+        ${voice ? '' : '<p class="why">⚠️ במכשיר הזה אין קול באנגלית, ולכן אי אפשר להשמיע את הקטעים. נסו בטלפון או בדפדפן Chrome / Edge.</p>'}
+        <button class="btn ball" id="dict">📝 הכתבה – שומעים משפט וכותבים אותו</button>
+      </div>
+      ${TEN_LISTENING.map((l, k) => `<button class="panel pick-row" data-c="${k}">
+        <span class="pick-icon">${l.icon}</span><span class="en pick-title">${esc(l.title)}</span>
+        ${done[k] !== undefined ? `<span class="badge-m">${done[k]}/${l.qs.length}</span>` : ''}
+      </button>`).join('')}
+    </section>`);
+    document.getElementById('dict').onclick = () => { sfx('tap'); location.hash = '#tenListening?d=1'; };
+    $app.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { sfx('tap'); location.hash = '#tenListening?c=' + b.dataset.c; });
+  }
+  function playerHtml() {
+    return `<div class="player">
+      <button class="btn ball big-play" id="play">▶️ השמעה</button>
+      <button class="btn ghost small" id="stop">⏹️ עצירה</button>
+      <label class="switch" style="margin:0"><input type="checkbox" id="slow" ${tenSlow ? 'checked' : ''}> 🐢 לאט</label>
+      <span class="muted" id="plays"></span>
+    </div>`;
+  }
+  function bindPlayer(getText, onFirst) {
+    let plays = 0;
+    document.getElementById('slow').onchange = e => { tenSlow = e.target.checked; };
+    document.getElementById('stop').onclick = () => window.speechSynthesis && speechSynthesis.cancel();
+    document.getElementById('play').onclick = () => {
+      if (!speakLong(getText(), tenSlow ? 0.7 : 0.95)) { toast('אין קול באנגלית במכשיר הזה'); return; }
+      plays++; document.getElementById('plays').textContent = `השמעות: ${plays}`;
+      if (plays === 1 && onFirst) onFirst();
+    };
+  }
+  function tenClip(idx) {
+    const clip = TEN_LISTENING[idx], results = [], review = [];
+    let i = 0;
+    h(`<section>
+      <div class="panel center">
+        <div class="pick-icon big">${clip.icon}</div>
+        <h2 class="en">${esc(clip.title)}</h2>
+        ${playerHtml()}
+        <p class="muted">הקשיבו לקטע ואז ענו על השאלות. אפשר להשמיע שוב בכל רגע.</p>
+      </div>
+      <div id="qbox"><div class="panel center muted">לחצו על ▶️ כדי להתחיל</div></div>
+    </section>`);
+    const qbox = document.getElementById('qbox');
+    function show() {
+      const q = clip.qs[i];
+      const opts = shuffle(q.o);
+      qbox.innerHTML = `<div class="panel q-card">
+        ${duvDots(results, i, clip.qs.length)}
+        <div class="sentence en small">${esc(q.q)}</div>
+        <div class="answers">${opts.map((o, k) => `<button class="answer en" data-k="${k}">${esc(o)}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div>`;
+      const btns = [...qbox.querySelectorAll('.answer')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = opts[+b.dataset.k] === q.o[0];
+        results.push(ok); if (!ok) review.push({ en: q.q, he: q.o[0] });
+        b.classList.add(ok ? 'right' : 'wrong'); if (!ok) btns[opts.indexOf(q.o[0])].classList.add('right');
+        sfx(ok ? 'good' : 'bad');
+        document.getElementById('fb').textContent = ok ? pick(EN_PRAISE) : 'Not this time 🙂';
+        later(() => {
+          i++;
+          if (i < clip.qs.length) return show();
+          if (window.speechSynthesis) speechSynthesis.cancel();
+          const right = results.filter(Boolean).length;
+          S2().tenClips[idx] = Math.max(S.tenClips[idx] || 0, right);
+          tenResult(right, clip.qs.length, () => tenClip(idx), review,
+            `<details class="transcript"><summary class="label">📜 התמליל של הקטע</summary><p class="en">${esc(clip.text)}</p></details>`);
+        }, ok ? 1200 : 2400);
+      });
+    }
+    bindPlayer(() => clip.text, show);
+  }
+  function tenDictation() {
+    const qs = shuffle(TEN_DICTATION).slice(0, 6), results = [];
+    let i = 0;
+    const words = s => normEn(s).split(' ').filter(Boolean);
+    function show() {
+      const s = qs[i];
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">📝 הקשיבו וכתבו את המשפט באנגלית</div>
+        ${playerHtml()}
+        <textarea id="ans" class="essay en small" dir="ltr" autocapitalize="sentences" spellcheck="false" placeholder="Type what you hear..."></textarea>
+        <div class="row center" style="margin-top:12px"><button class="btn ball" id="check">בדיקה ✔️</button></div>
+        <div class="dict-result en" id="res"></div>
+        <div class="feedback" id="fb"></div>
+        <button class="btn ball" id="next" hidden>הבא ⬅️</button>
+      </div></section>`);
+      bindPlayer(() => s);
+      later(() => document.getElementById('play').click(), 300);
+      const input = document.getElementById('ans');
+      document.getElementById('check').onclick = () => {
+        if (!input.value.trim()) return;
+        const want = words(s), got = words(input.value);
+        // align the two sentences word by word (longest common subsequence), so one missing word
+        // does not mark everything after it as wrong
+        const L = Array.from({ length: want.length + 1 }, () => Array(got.length + 1).fill(0));
+        for (let a = want.length - 1; a >= 0; a--) for (let b = got.length - 1; b >= 0; b--)
+          L[a][b] = want[a] === got[b] ? L[a + 1][b + 1] + 1 : Math.max(L[a + 1][b], L[a][b + 1]);
+        const hit = new Set();
+        for (let a = 0, b = 0; a < want.length && b < got.length;) {
+          if (want[a] === got[b]) { hit.add(a); a++; b++; } else if (L[a + 1][b] >= L[a][b + 1]) a++; else b++;
+        }
+        const marked = s.split(' ').map((w, k) => `<span class="${hit.has(k) ? 'w-ok' : 'w-bad'}">${esc(w)}</span>`).join(' ');
+        const ok = want.length === got.length && want.every((w, k) => w === got[k]);
+        results.push(ok); if (ok) S.stats.tenDictRight++;
+        save();
+        input.disabled = true; document.getElementById('check').disabled = true;
+        document.getElementById('res').innerHTML = marked;
+        document.getElementById('fb').textContent = ok ? pick(EN_PRAISE) : 'כמעט! המילים באדום הן המקומות לתקן';
+        sfx(ok ? 'good' : 'bad');
+        const next = document.getElementById('next'); next.hidden = false;
+        next.onclick = () => { i++; i < qs.length ? show() : tenResult(results.filter(Boolean).length, qs.length, tenDictation, []); };
+      };
+    }
+    show();
   }
 
   // ===== Achievements =====
