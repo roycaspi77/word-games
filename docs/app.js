@@ -19,8 +19,29 @@
   function firstLetter(s) { return strip(s).replace(/[^א-ת]/g, '').charAt(0); }
   const LETTERS = [...new Set(WORDS.map(w => w.letter))];
 
+  // ---------- who is playing ----------
+  // A personal link (…/word-games/?u=<token>) picks the player. Each player has their own
+  // progress on the device, so brothers and sisters can share a tablet.
+  const CUR = 'wordgames.current', PROFILES = 'wordgames.profiles';
+  const ls = {
+    get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } },
+  };
+  (function takeTokenFromUrl() {
+    const q = new URLSearchParams(location.search);
+    const u = q.get('u');
+    if (!u) return;
+    ls.set(CUR, u);
+    q.delete('u'); // keep the link out of the address bar (and out of screenshots)
+    const rest = q.toString();
+    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } catch (e) { /* ignore */ }
+  })();
+  const TOKEN = ls.get(CUR) || '';
+  const API_URL = window.WORD_GAMES_API || '';
+  const ONLINE = !!TOKEN && !!(API_URL || window.MOCK_API);
+
   // ---------- saved progress (on this device) ----------
-  const KEY = 'wordgames.v1';
+  const KEY = TOKEN ? 'wordgames.v1:' + TOKEN : 'wordgames.v1';
   const DEFAULT = {
     name: '', sound: true, stars: 0,
     mastery: {},          // id -> { ok, bad, streak }
@@ -38,7 +59,13 @@
   let S = load();
   function load() {
     try {
-      const raw = JSON.parse(localStorage.getItem(KEY) || '{}');
+      let text = ls.get(KEY);
+      // the first player who opens a personal link on this device takes over the progress made before links
+      if (!text && TOKEN && !ls.get('wordgames.v1.claimed')) {
+        text = ls.get('wordgames.v1');
+        if (text) ls.set('wordgames.v1.claimed', TOKEN);
+      }
+      const raw = JSON.parse(text || '{}');
       return Object.assign({}, DEFAULT, raw, { stats: Object.assign({}, DEFAULT.stats, raw.stats || {}) });
     } catch (e) { return JSON.parse(JSON.stringify(DEFAULT)); }
   }
@@ -51,7 +78,65 @@
     const x = m(id);
     if (ok) { x.ok++; x.streak++; S.stats.correct++; } else { x.bad++; x.streak = 0; }
   }
-  function addStars(n) { S.stars += n; updateStars(); }
+  // every finished game calls this: it adds the stars here and queues one progress row for the server
+  function addStars(n, right, total, note) {
+    S.stars += n; updateStars();
+    if (!ONLINE) return;
+    const game = (location.hash || '#home').slice(1);
+    S.outbox = S.outbox || [];
+    S.outbox.push({ id: uid(), time: Date.now(), area: areaOf(game.split('?')[0]), game, right, total, stars: n, note: note || '' });
+    save(); later0(syncNow, 200);
+  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
+  function later0(fn, ms) { setTimeout(fn, ms); } // not cleared on navigation, unlike later()
+  function areaOf(name) {
+    return name.startsWith('duv') ? 'duv' : name.startsWith('ten') ? 'ten'
+      : (name === 'english' || name.startsWith('eng')) ? 'eng' : 'luli';
+  }
+
+  // ---------- server (Google Apps Script) ----------
+  async function api(fn, ...args) {
+    if (window.MOCK_API) return window.MOCK_API(fn, args);
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn, args }) });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'שגיאה בשרת');
+    return json.data;
+  }
+  const pendingStars = () => (S.outbox || []).reduce((s, e) => s + (e.stars || 0), 0);
+  function setBalance(b) { S.stars = b + pendingStars(); updateStars(); save(); }
+  let syncing = false;
+  async function syncNow() {
+    if (!ONLINE || syncing || !(S.outbox || []).length) return;
+    syncing = true;
+    const batch = S.outbox.slice(0, 50);
+    try {
+      const r = await api('sync', TOKEN, batch);
+      const sent = new Set(batch.map(e => e.id));
+      S.outbox = S.outbox.filter(e => !sent.has(e.id));
+      setBalance(r.balance);
+    } catch (e) { /* offline – try again later */ }
+    syncing = false;
+    if ((S.outbox || []).length) later0(syncNow, 5000);
+  }
+  async function helloNow() {
+    if (!ONLINE) return;
+    try {
+      const r = await api('hello', TOKEN);
+      S.me = r.me; S.people = r.people;
+      // stars earned before the personal link go to the server once, into an empty history
+      if (!r.hasEvents && !S.imported && S.stars > pendingStars()) {
+        S.outbox = S.outbox || [];
+        S.outbox.unshift({ id: 'import-' + uid(), type: 'import', time: Date.now(), area: '', game: 'import', stars: S.stars - pendingStars() });
+      }
+      S.imported = true;
+      const profiles = JSON.parse(ls.get(PROFILES) || '{}');
+      profiles[TOKEN] = r.me.name; ls.set(PROFILES, JSON.stringify(profiles));
+      setBalance(r.balance);
+      await syncNow();
+      if (location.hash === '' || location.hash === '#home') route();
+    } catch (e) { /* offline */ }
+  }
+  window.addEventListener('online', () => { helloNow(); });
   function today() { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function pad(n) { return String(n).padStart(2, '0'); }
   function markPlayed() {
@@ -268,7 +353,11 @@
     { id: 'tenWriter', e: '✍️', t: 'סופר צעיר',          d: 'כתבת חיבור שעומד בכל הדרישות',   v: () => st().tenWritten, goal: 1 },
     { id: 'tenListen', e: '🎧', t: 'אוזן קשבת',          d: 'האזנת לכל הקטעים',               v: () => Object.keys(S.tenClips || {}).length, goal: (window.TEN_LISTENING || []).length },
     { id: 'tenDict20', e: '📝', t: 'כתבן מהיר',          d: '20 משפטי הכתבה בלי טעויות',      v: () => st().tenDictRight, goal: 20 },
-    { id: 'ten20',     e: '🏆', t: 'MVP',                d: '20 משחקים באיזור של יובלולו',   v: () => st().tenGames, goal: 20 },    // habits and stars
+    { id: 'ten20',     e: '🏆', t: 'MVP',                d: '20 משחקים באיזור של יובלולו',   v: () => st().tenGames, goal: 20 },
+    // sharing
+    { id: 'giver',    e: '💝', t: 'לב זהב',              d: 'שלחת כוכבים למישהו אחר',        v: () => st().sent || 0, goal: 1 },
+    { id: 'giver50',  e: '🎁', t: 'נדיב במיוחד',         d: 'שלחת 50 כוכבים בסך הכול',        v: () => st().sent || 0, goal: 50 },
+    // habits and stars
     { id: 'days3',    e: '📅', t: 'מתמיד',               d: 'שיחקת 3 ימים ברצף',             v: dayStreak, goal: 3 },
     { id: 'days7',    e: '🏅', t: 'שבוע של מילים',       d: 'שיחקת 7 ימים ברצף',             v: dayStreak, goal: 7 },
     { id: 'days14',   e: '🥈', t: 'שבועיים בלי הפסקה',   d: 'שיחקת 14 ימים ברצף',            v: dayStreak, goal: 14 },
@@ -296,7 +385,7 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
+  const SCREENS = { home, stars, progress, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
   let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
@@ -326,7 +415,8 @@
   // home: one tile per area, plus achievements and settings
   function home() {
     const ds = dayStreak();
-    const greet = S.name ? `שלום ${esc(S.name)}!` : 'שלום!';
+    const nm = S.name || (S.me && S.me.name) || '';
+    const greet = nm ? `שלום ${esc(nm)}!` : 'שלום!';
     h(`<section>
       <div class="panel hello">
         <div class="owl">🦉</div>
@@ -340,6 +430,7 @@
         <button class="game-tile tile-cherry" data-go="duvduv"><span class="emoji">🍒</span><span class="title">האיזור של דובדוב</span><span class="sub">משחקי עברית לכיתה א'</span></button>
         <button class="game-tile tile-indigo" data-go="english"><span class="emoji">${ENG_ICON}</span><span class="title">האיזור של נושנוש</span><span class="sub">אנגלית לכיתה ח'</span></button>
         <button class="game-tile tile-ball" data-go="tenth"><span class="emoji">${TEN_ICON}</span><span class="title">האיזור של יובלולו</span><span class="sub">אנגלית לכיתה י'</span></button>
+        ${ONLINE ? `<button class="game-tile tile-teal" data-go="progress"><span class="emoji">📊</span><span class="title">${S.me && S.me.role === 'admin' ? 'ההתקדמות של כולם' : 'ההתקדמות שלי'}</span><span class="sub">משחקים, הצלחה וכוכבים</span></button>` : ''}
         <button class="game-tile tile-blue" data-go="badges"><span class="emoji">🏆</span><span class="title">הישגים</span><span class="sub">${S.badges.length} מתוך ${BADGES.length} תגים</span></button>
       </div>
       <div class="row center" style="margin-top:18px"><button class="btn ghost small" data-go="settings">⚙️ הגדרות</button></div>
@@ -445,7 +536,7 @@
     stopTimers();
     const stars = moves <= Math.ceil(n * 1.6) ? 3 : moves <= n * 2.5 ? 2 : 1;
     const earned = stars * 2 + n;
-    addStars(earned);
+    addStars(earned, n, n, moves + ' תורות');
     S.stats.memoryGames++;
     if (stars === 3) S.stats.memoryThreeStars++;
     const best = S.stats.memoryBest[n];
@@ -553,7 +644,7 @@
       const right = results.filter(Boolean).length;
       const stars = right >= 9 ? 3 : right >= 6 ? 2 : right >= 3 ? 1 : 0;
       const bonus = right === qs.length ? 5 : 0;
-      addStars(starsGot + bonus);
+      addStars(starsGot + bonus, right, qs.length, qs.filter((_, k) => !results[k]).map(w => w.term).join(', '));
       S.stats.triviaGames++; if (right === qs.length && qs.length >= TR_LEN) S.stats.perfectTrivia++;
       if (trMode === 'def') S.stats.reverseGames++;
       markPlayed(); save();
@@ -763,7 +854,7 @@
       stopTimers();
       const stars = hints === 0 ? 3 : hints <= 2 ? 2 : 1;
       const earned = n + stars * 2;
-      addStars(earned);
+      addStars(earned, n, n, hints + ' רמזים');
       S.stats.wordsearchGames++; S.stats.wordsFound += n;
       if (wsLevel === 'hard') S.stats.searchHard++;
       if (hints === 0) S.stats.searchNoHint++;
@@ -827,7 +918,7 @@
       document.getElementById('no').onclick = () => next(false);
     }
     function done() {
-      addStars(knew); markPlayed(); save(); sfx('win'); confetti(80);
+      addStars(knew, knew, deck.length); markPlayed(); save(); sfx('win'); confetti(80);
       h(`<section class="panel center">
         <h1>סיימת את החבילה! 🎉</h1>
         <p>ידעת <b>${knew}</b> מתוך ${deck.length} מילים והרווחת <b>${knew}</b> כוכבים.</p>
@@ -924,7 +1015,7 @@
 
   function duvResult(right, total, again) {
     const stars = right >= total * 0.9 ? 3 : right >= total * 0.6 ? 2 : right > 0 ? 1 : 0;
-    addStars(right);
+    addStars(right, right, total);
     S.stats.duvGames++;
     if (right === total && total >= 8) S.stats.duvPerfect++;
     markPlayed(); save();
@@ -1166,7 +1257,7 @@
 
   function engResult(right, total, again) {
     const stars = right >= total * 0.9 ? 3 : right >= total * 0.6 ? 2 : right > 0 ? 1 : 0;
-    addStars(right);
+    addStars(right, right, total);
     S.stats.engGames++;
     if (right === total && total >= 10) S.stats.engPerfect++;
     markPlayed(); save();
@@ -1525,7 +1616,7 @@
 
   function tenResult(right, total, again, review, extraHtml) {
     const stars = right >= total * 0.9 ? 3 : right >= total * 0.6 ? 2 : right > 0 ? 1 : 0;
-    addStars(right);
+    addStars(right, right, total);
     S.stats.tenGames++;
     if (right === total && total >= 4) S.stats.tenPerfect++;
     markPlayed(); save();
@@ -1841,7 +1932,7 @@
       const bonus = checks.find(c => !c.core).ok;
       const first = !S.tenDone[k];
       S.tenDone[k] = true;
-      if (first) { S.stats.tenWritten++; addStars(bonus ? 8 : 5); markPlayed(); }
+      if (first) { S.stats.tenWritten++; addStars(bonus ? 8 : 5, 1, 1, TEN_WRITING[k].title); markPlayed(); }
       save(); sfx('win'); confetti();
       fb.textContent = first ? `מצוין! הטקסט עומד בכל הדרישות – קיבלת ${bonus ? 8 : 5} כוכבים 🎉` : 'מצוין! הטקסט עומד בכל הדרישות 🎉';
       checkBadges();
@@ -1978,6 +2069,132 @@
     show();
   }
 
+  // ===== Stars: send stars to someone else =====
+  const AREA_NAMES = { luli: '🍭 לולי', duv: '🍒 דובדוב', eng: '🌍 נושנוש', ten: '🏀 יובלולו' };
+  function gameTitle(game) {
+    const name = String(game || '').split('?')[0];
+    const all = [...GAMES, ...DUV_GAMES, ...EN_GAMES, ...TEN_GAMES];
+    const g = all.find(x => x.id === name);
+    return g ? g.title.replace(/<[^>]*>/g, '') : ({ import: 'כוכבים מלפני הקישור' })[name] || name;
+  }
+  function ago(ms) {
+    if (!ms) return 'עוד לא שיחק';
+    const d = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(ms).setHours(0, 0, 0, 0)) / 864e5);
+    return d <= 0 ? 'היום' : d === 1 ? 'אתמול' : `לפני ${d} ימים`;
+  }
+  function needLink() {
+    return `<div class="panel center">
+      <div class="eng-mascot">🔗</div>
+      <h2>צריך קישור אישי</h2>
+      <p>כדי לשלוח כוכבים ולראות התקדמות, פותחים את האפליקציה מהקישור האישי שקיבלתם מההורים.</p>
+    </div>`;
+  }
+  let sendTo = null, sendAmount = 5;
+  function stars() {
+    if (!ONLINE) { h(`<section>${needLink()}</section>`); return; }
+    const people = S.people || [];
+    h(`<section>
+      <div class="panel center">
+        <div class="eng-mascot">⭐</div>
+        <h1>יש לך ${S.stars} כוכבים</h1>
+        <p class="muted">${S.me ? esc(S.me.name) : ''}</p>
+      </div>
+      <div class="panel">
+        <h2>🎁 שליחת כוכבים</h2>
+        ${people.length ? `
+          <div class="label">למי שולחים?</div>
+          <div class="chips">${people.map(p => `<button class="chip ${sendTo === p.id ? 'on' : ''}" data-to="${p.id}">${esc(p.name)}</button>`).join('')}</div>
+          <div class="label">כמה כוכבים?</div>
+          <div class="chips">
+            ${[1, 5, 10, 25, 50].map(n => `<button class="chip ${sendAmount === n ? 'on' : ''}" data-n="${n}">⭐ ${n}</button>`).join('')}
+            <input type="number" id="amt" class="amount" min="1" max="500" value="${sendAmount}" inputmode="numeric">
+          </div>
+          <label class="field">הודעה (לא חובה)<input type="text" id="note" maxlength="100" placeholder="למשל: כל הכבוד על המבחן!"></label>
+          <button class="btn" id="send">🎁 שליחה</button>
+          ${S.me && S.me.role === 'admin' ? '<p class="muted" style="font-size:14px">הורים יכולים לשלוח גם יותר כוכבים ממה שיש להם – זו מתנה.</p>' : ''}`
+        : '<p class="muted">טוען את רשימת האנשים...</p>'}
+      </div>
+      <div class="panel"><h2>📜 היסטוריה</h2><ul class="mistakes" id="hist"><li class="muted">טוען...</li></ul></div>
+    </section>`);
+    $app.querySelectorAll('[data-to]').forEach(b => b.onclick = () => { sendTo = b.dataset.to; sfx('tap'); stars(); });
+    $app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { sendAmount = +b.dataset.n; sfx('tap'); stars(); });
+    const amt = document.getElementById('amt');
+    if (amt) amt.oninput = () => { sendAmount = Math.round(+amt.value) || 0; };
+    const btn = document.getElementById('send');
+    if (btn) btn.onclick = async () => {
+      const to = people.find(p => p.id === sendTo);
+      const n = Math.round(+document.getElementById('amt').value);
+      if (!to) return toast('בחרו למי לשלוח');
+      if (!(n >= 1 && n <= 500)) return toast('בוחרים בין 1 ל-500 כוכבים');
+      if (!confirm(`לשלוח ${n} כוכבים ל${to.name}?`)) return;
+      btn.disabled = true;
+      try {
+        await syncNow();
+        const r = await api('transfer', TOKEN, to.id, n, document.getElementById('note').value, uid());
+        setBalance(r.balance);
+        sfx('badge'); confetti(60);
+        toast(r.gift ? `🎁 שלחת ${n} כוכבים במתנה ל${to.name}!` : `⭐ שלחת ${n} כוכבים ל${to.name}!`);
+        S.stats.sent = (S.stats.sent || 0) + n; save(); checkBadges();
+        stars();
+      } catch (e) { toast(e.message.includes('Failed to fetch') ? 'אין חיבור לאינטרנט – נסו שוב' : e.message); btn.disabled = false; }
+    };
+    // my history of sent / received stars
+    api('progress', TOKEN).then(r => {
+      const mine = r.people.find(p => p.name === (S.me && S.me.name)) || r.people[0];
+      const moves = (mine ? mine.recent : []).filter(e => e.type !== 'game' && e.type !== 'import');
+      const el = document.getElementById('hist'); if (!el) return;
+      el.innerHTML = moves.length ? moves.map(e => `<li style="background:${e.stars < 0 ? '#fef2f2' : '#f0fdf4'}">
+        ${e.stars < 0 ? `📤 שלחת ${-e.stars} ⭐ ל${esc(e.other)}` : `📥 ${esc(e.other)} שלח/ה לך ${e.stars} ⭐${e.type === 'gift' ? ' (מתנה)' : ''}`}
+        ${e.note ? `<div class="muted">"${esc(e.note)}"</div>` : ''}<div class="muted" style="font-size:13px">${ago(e.time)}</div></li>`).join('')
+        : '<li class="muted">עוד לא נשלחו או התקבלו כוכבים</li>';
+    }).catch(() => { const el = document.getElementById('hist'); if (el) el.innerHTML = '<li class="muted">אין חיבור לאינטרנט</li>'; });
+  }
+
+  // ===== Progress: parents see everyone, a player sees themself =====
+  function progress() {
+    if (!ONLINE) { h(`<section>${needLink()}</section>`); return; }
+    h(`<section><div class="panel center"><div class="eng-mascot">📊</div><h2>טוען את ההתקדמות...</h2></div></section>`);
+    syncNow().finally(() => api('progress', TOKEN).then(r => {
+      if (location.hash !== '#progress') return;
+      const cards = r.people.filter(p => r.admin ? p.role !== 'admin' || p.games : true);
+      h(`<section>
+        <div class="panel"><h2>📊 ${r.admin ? 'ההתקדמות של כולם' : 'ההתקדמות שלי'}</h2>
+          <p class="muted">משחקים שהסתיימו, לפי איזור. "השבוע" = 7 הימים האחרונים.</p></div>
+        <div class="progress-grid">${cards.map(p => `
+          <div class="panel person">
+            <div class="person-head">
+              <h2>${esc(p.name)}</h2>
+              <span class="star-pill">⭐ ${p.balance}</span>
+            </div>
+            <div class="stats">
+              <div class="stat"><b>${p.games}</b>משחקים</div>
+              <div class="stat"><b>${p.week}</b>השבוע</div>
+              <div class="stat"><b>${p.days}</b>ימי משחק</div>
+            </div>
+            <div class="muted" style="margin:10px 0">שיחק לאחרונה: <b>${ago(p.last)}</b></div>
+            ${Object.keys(p.areas).length ? `<table class="area-table">
+              <tr><th>איזור</th><th>משחקים</th><th>השבוע</th><th>הצלחה</th></tr>
+              ${Object.entries(p.areas).map(([a, x]) => {
+                const pct = x.total ? Math.round(x.right * 100 / x.total) : 0;
+                return `<tr><td>${AREA_NAMES[a] || esc(a)}</td><td>${x.games}</td><td>${x.week}</td>
+                  <td><div class="progress small"><div style="width:${pct}%"></div></div>${pct}%</td></tr>`;
+              }).join('')}
+            </table>` : ''}
+            <details><summary class="label">פעילות אחרונה</summary>
+              <ul class="recent">${p.recent.map(e => `<li>
+                <span>${e.type === 'game' ? `${AREA_NAMES[e.area] ? AREA_NAMES[e.area].split(' ')[0] : ''} ${esc(gameTitle(e.game))} – ${e.right}/${e.total}`
+                  : e.type === 'import' ? '⭐ כוכבים מלפני הקישור'
+                  : e.stars < 0 ? `📤 נשלחו ל${esc(e.other)}` : `📥 התקבלו מ${esc(e.other)}${e.type === 'gift' ? ' (מתנה)' : ''}`}</span>
+                <span class="muted">${e.stars > 0 ? '+' : ''}${e.stars}⭐ · ${ago(e.time)}</span>
+                ${e.note && e.type === 'game' ? `<div class="muted small-note">${esc(e.note)}</div>` : ''}
+              </li>`).join('') || '<li class="muted">אין עדיין</li>'}</ul>
+            </details>
+          </div>`).join('')}
+        </div>
+      </section>`);
+    }).catch(e => h(`<section><div class="panel center"><h2>😕 לא הצלחתי לטעון</h2><p>${esc(e.message)}</p></div></section>`)));
+  }
+
   // ===== Achievements =====
   function badges() {
     const st = S.stats;
@@ -2012,20 +2229,36 @@
         <button class="btn ghost small" id="install" hidden>📲 התקנת האפליקציה</button>
       </div>
       <hr style="margin:22px 0;border:0;border-top:2px dashed #e5e7eb">
-      <p class="muted">ההתקדמות נשמרת במכשיר הזה בלבד.</p>
-      <button class="btn ghost small" id="reset">🗑️ איפוס כל ההתקדמות</button>
+      ${ONLINE
+        ? `<p>🔗 מחובר כ<b>${esc(S.me ? S.me.name : '...')}</b>. הכוכבים והמשחקים נשמרים גם אצל ההורים.${(S.outbox || []).length ? ` (${S.outbox.length} משחקים מחכים לחיבור לאינטרנט)` : ''}</p>`
+        : `<p class="muted">ההתקדמות נשמרת במכשיר הזה בלבד. כדי שההורים יראו אותה ושאפשר יהיה לשלוח כוכבים, פותחים את האפליקציה מהקישור האישי.</p>`}
+      ${profileSwitcher()}
+      <button class="btn ghost small" id="reset">🗑️ איפוס ההתקדמות במכשיר</button>
     </section>`);
+    $app.querySelectorAll('[data-prof]').forEach(b => b.onclick = () => {
+      ls.set(CUR, b.dataset.prof); location.hash = '#home'; location.reload();
+    });
+    const ib = document.getElementById('install');
+    if (deferredInstall) { ib.hidden = false; ib.onclick = async () => { deferredInstall.prompt(); deferredInstall = null; ib.hidden = true; }; }
     document.getElementById('sv').onclick = () => {
       S.name = document.getElementById('nm').value.trim(); S.sound = document.getElementById('snd').checked;
       save(); sfx('good'); toast('נשמר! 👍'); location.hash = '#home';
     };
     document.getElementById('reset').onclick = () => {
-      if (!confirm('למחוק את כל הכוכבים, ההתקדמות וההישגים? אי אפשר לבטל את זה.')) return;
-      const keep = { name: S.name, sound: S.sound };
+      if (!confirm(ONLINE ? 'למחוק את ההתקדמות וההישגים במכשיר הזה? הכוכבים וההיסטוריה אצל ההורים נשארים.' : 'למחוק את כל הכוכבים, ההתקדמות וההישגים? אי אפשר לבטל את זה.')) return;
+      // with a personal link the stars live on the server, so they (and unsent games) are kept
+      const keep = ONLINE ? { name: S.name, sound: S.sound, stars: S.stars, outbox: S.outbox, me: S.me, people: S.people, imported: true } : { name: S.name, sound: S.sound };
       S = Object.assign(JSON.parse(JSON.stringify(DEFAULT)), keep); save(); updateStars(); toast('ההתקדמות אופסה');
     };
-    const ib = document.getElementById('install');
-    if (deferredInstall) { ib.hidden = false; ib.onclick = async () => { deferredInstall.prompt(); deferredInstall = null; ib.hidden = true; }; }
+  }
+  // players who opened their personal link on this device
+  function profileSwitcher() {
+    let profiles = {};
+    try { profiles = JSON.parse(ls.get(PROFILES) || '{}'); } catch (e) { /* ignore */ }
+    const others = Object.entries(profiles).filter(([t]) => t !== TOKEN);
+    if (!others.length) return '';
+    return `<div class="label">החלפת שחקן במכשיר הזה:</div>
+      <div class="chips">${others.map(([t, n]) => `<button class="chip" data-prof="${esc(t)}">👤 ${esc(n)}</button>`).join('')}</div>`;
   }
 
   // ---------- install (PWA) ----------
@@ -2038,6 +2271,8 @@
   // test hook
   window.WordGames = { WORDS, state: () => S, tooClose };
 
+  document.getElementById('starsPill').onclick = () => { sfx('tap'); location.hash = '#stars'; };
   updateStars();
   route();
+  helloNow();
 })();

@@ -38,6 +38,27 @@ The home screen has three areas plus achievements:
 
 Progress is saved on each device (localStorage).
 
+## Progress and stars (optional backend)
+With the backend, each person opens a personal link (`…/word-games/?u=<token>`).
+- **Progress:** every finished game is sent as one row (who, area, game, score, stars). Parents see everyone on the 📊 screen; a kid sees only their own.
+- **Stars:** the star balance lives on the server, so stars can be sent between people (tap the ⭐ counter). Parents can also give stars as a gift without having them.
+- **Offline:** games wait on the device and are sent when it's online again.
+- **Shared devices:** each player has separate progress on the device, and Settings can switch between players who opened their link there.
+
+Without a backend (`docs/config.js` empty), the app works as before, with progress on each device only.
+
+### One-time setup
+1. Create a Google Sheet (for example "משחקי מילים – התקדמות") → Extensions → Apps Script.
+2. Paste `apps-script/Code.gs` and save. Run `setup` once and allow access. It creates the Users and Events sheets, with a personal link for each person in the Users sheet.
+3. Deploy → New deployment → Web app. Execute as: Me. Who has access: Anyone. Copy the `/exec` URL.
+4. Put the URL in `docs/config.js` (`window.WORD_GAMES_API = '…/exec'`) and push.
+5. Send each kid their own link from the Users sheet. You can rename people or add rows in the Users sheet; a new row needs a new random token.
+
+To upgrade the backend later: paste the new `Code.gs`, run `setup`, then Deploy → Manage deployments → ✏️ Edit the existing deployment → New version. That keeps the same URL.
+
+### Local testing
+`python -m http.server 8773` from this folder, then open `http://localhost:8773/docs/index.html?mock=1`. `.dev/mock.js` runs the real `Code.gs` in the browser on a fake Sheet. In the console, `Mock.links()` lists the personal links and `Mock.reset()` starts over.
+
 ## Files
 - `docs/words.js`: the word list, one `word | meaning` per line. Add or fix words here.
 - `docs/app.js`: the screens and games. To add a game, add it to `GAMES` and write a screen function in `SCREENS`.

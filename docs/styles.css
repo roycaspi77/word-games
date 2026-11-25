@@ -389,6 +389,22 @@ body.ten { background: linear-gradient(160deg, #fed7aa 0%, #fde68a 45%, #fecaca 
 .transcript { text-align: left; margin-top: 10px; }
 .transcript summary { text-align: right; cursor: pointer; }
 
+/* stars and progress */
+#starsPill { cursor: pointer; }
+.amount { width: 90px; font-family: inherit; font-size: 17px; padding: 8px 10px; border-radius: 999px; border: 2px solid #ddd6fe; text-align: center; }
+.progress-grid { display: grid; gap: 0 18px; }
+@media (min-width: 820px) { .progress-grid { grid-template-columns: 1fr 1fr; } main:has(.progress-grid) { max-width: 1100px; } }
+.person-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.person-head h2 { margin: 0; }
+.star-pill { background: var(--yellow); border-radius: 999px; padding: 4px 12px; font-family: var(--font-title); font-weight: 700; }
+.area-table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 15px; }
+.area-table th { text-align: right; color: var(--muted); font-weight: 400; padding: 4px; }
+.area-table td { padding: 6px 4px; border-top: 1px solid #f1f5f9; }
+.area-table .progress.small { display: inline-block; width: 60px; height: 8px; margin: 0 0 0 6px; vertical-align: middle; }
+.recent { list-style: none; padding: 0; margin: 8px 0 0; }
+.recent li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; padding: 8px 4px; border-top: 1px solid #f1f5f9; font-size: 15px; }
+.small-note { width: 100%; font-size: 13px; }
+
 /* dictionary */
 .search {
   width: 100%; font-family: inherit; font-size: 19px; padding: 13px 16px; border-radius: 16px;
