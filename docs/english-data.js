@@ -33,6 +33,108 @@ Western | מערבי
 Wonder if | לתהות אם
 `;
 
+// Vocabulary, list 2 (added Nov 2026). Avoid and Culture are already in list 1.
+window.EN_WORDS_RAW_2 = `
+Believe | להאמין
+Forget | לשכוח
+Remember | לזכור
+Decide | להחליט
+Explain | להסביר
+Improve | לשפר
+Choose | לבחור
+Invite | להזמין
+Borrow | לשאול בהשאלה
+Enjoy | ליהנות
+Return | להחזיר, לחזור
+Spend | לבלות, להוציא (כסף)
+Happen | לקרות
+Agree | להסכים
+Suggest | להציע
+Discover | לגלות
+Prepare | להכין, להתכונן
+Continue | להמשיך
+Protect | להגן
+Advice | עצה
+Experience | ניסיון, חוויה
+Future | עתיד
+Problem | בעיה
+Example | דוגמה
+Reason | סיבה
+Weather | מזג אוויר
+Journey | מסע, נסיעה
+Friendship | חברות
+Environment | סביבה
+Opportunity | הזדמנות
+Knowledge | ידע
+Challenge | אתגר
+Behavior | התנהגות
+Difference | הבדל
+Community | קהילה
+Responsibility | אחריות
+Achievement | הישג
+Attention | תשומת לב
+Different | שונה
+Difficult | קשה
+Important | חשוב
+Possible | אפשרי
+Friendly | ידידותי
+Beautiful | יפה
+Healthy | בריא
+Dangerous | מסוכן
+Surprised | מופתע
+Excited | נרגש, מתרגש
+Confident | בעל ביטחון עצמי
+Successful | מצליח
+Curious | סקרן
+Comfortable | נוח
+Necessary | נחוץ, הכרחי
+Excellent | מצוין
+Ordinary | רגיל
+Similar | דומה
+Proud | גאה
+Honest | ישר, כן
+Suddenly | לפתע, פתאום
+Carefully | בזהירות
+Probably | כנראה
+Usually | בדרך כלל
+Especially | במיוחד
+Finally | לבסוף, סוף סוף
+Quickly | במהירות
+Slowly | לאט
+Clearly | בבירור
+Recently | לאחרונה
+Although | אף על פי ש־
+Instead | במקום זאת
+Enough | מספיק
+However | אולם, עם זאת
+Perhaps | אולי
+Already | כבר
+Almost | כמעט
+During | במהלך
+Between | בין
+Through | דרך, באמצעות
+Without | בלי, ללא
+Unless | אלא אם כן
+While | בזמן ש־, בעוד ש־
+Both | שניהם, שתיהן
+Several | כמה, מספר
+Still | עדיין
+Yet | עדיין, עוד
+Therefore | לכן
+Together | ביחד
+Sometimes | לפעמים
+Increase | להגדיל, לעלות
+Reduce | להפחית, לצמצם
+Include | לכלול
+Require | לדרוש, להצריך
+Remain | להישאר
+Attend | להשתתף, לנכוח
+Lend | להלוות
+Waste | לבזבז
+Achieve | להשיג, להצליח להשיג
+Appear | להופיע, להיראות
+`;
+
 // Present Simple vs Present Progressive.
 // sentence (___ marks the blank) | answer (alternatives separated by /) | two wrong options separated by ; | S or P | why (Hebrew)
 window.EN_TENSE_RAW = `

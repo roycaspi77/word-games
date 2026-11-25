@@ -1205,12 +1205,40 @@
   }
 
   // ===== Noshnosh's area (האיזור של נושנוש): English for 8th grade =====
+  // vocabulary comes in lists (list 1 = the first words, list 2 = added later); a word appears once
   const EN_WORDS = [];
-  (window.EN_WORDS_RAW || '').split('\n').forEach(line => {
+  [[window.EN_WORDS_RAW, 1], [window.EN_WORDS_RAW_2, 2]].forEach(([raw, list]) => (raw || '').split('\n').forEach(line => {
     const i = line.indexOf('|'); if (i < 0) return;
     const en = line.slice(0, i).trim(), he = line.slice(i + 1).trim();
-    if (en && he) EN_WORDS.push({ en, he, base: en.replace(/^to\s+/i, '').toLowerCase() });
-  });
+    const base = en.replace(/^to\s+/i, '').toLowerCase();
+    if (!en || !he || EN_WORDS.some(w => w.base === base)) return;
+    // the Hebrew meanings as separate words, to spot two English words that mean the same (Perhaps / Possibly)
+    const heKeys = new Set(he.replace(/\(.*?\)/g, '').replace(/[־]/g, '').split(/[,/]+/).map(s => s.trim()).filter(Boolean));
+    EN_WORDS.push({ en, he, base, list, heKeys });
+  }));
+  const enSameMeaning = (a, b) => { for (const k of a.heKeys) if (b.heKeys.has(k)) return true; return false; };
+  const EN_LISTS = [...new Set(EN_WORDS.map(w => w.list))];
+  let enList = 'all';
+  const enPool = () => enList === 'all' ? EN_WORDS : EN_WORDS.filter(w => String(w.list) === enList);
+  function enListPicker() {
+    return `<div class="label">על אילו מילים משחקים?</div><div class="chips">
+      <button class="chip ${enList === 'all' ? 'on' : ''}" data-list="all">כל המילים (${EN_WORDS.length})</button>
+      ${EN_LISTS.map(l => `<button class="chip ${enList === String(l) ? 'on' : ''}" data-list="${l}">רשימה ${l}${l === EN_LISTS[EN_LISTS.length - 1] && l > 1 ? ' 🆕' : ''} (${EN_WORDS.filter(w => w.list === l).length})</button>`).join('')}
+    </div>`;
+  }
+  function bindEnListPicker(rerender) {
+    $app.querySelectorAll('[data-list]').forEach(b => b.onclick = () => { enList = b.dataset.list; sfx('tap'); rerender(); });
+  }
+  // two wrong options: no word that means the same as the right one (or as each other)
+  function enDistractors(w) {
+    const out = [];
+    for (const x of shuffle(EN_WORDS)) {
+      if (out.length === 2) break;
+      if (x === w || enSameMeaning(x, w) || out.some(o => enSameMeaning(o, x))) continue;
+      out.push(x);
+    }
+    return out;
+  }
   const EN_TENSE = [];
   (window.EN_TENSE_RAW || '').split('\n').forEach(line => {
     const f = line.split('|').map(x => x.trim());
@@ -1292,18 +1320,20 @@
         <button class="chip ${enVocabMode === 'en' ? 'on' : ''}" data-m="en"><span class="en">English</span> ← עברית</button>
         <button class="chip ${enVocabMode === 'he' ? 'on' : ''}" data-m="he">עברית ← <span class="en">English</span></button>
       </div>
+      ${enListPicker()}
       <button class="btn blue" id="go">Let's go! 🚀</button>
     </section>`);
     $app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { enVocabMode = b.dataset.m; sfx('tap'); engVocab(); });
+    bindEnListPicker(engVocab);
     document.getElementById('go').onclick = engVocabPlay;
   }
   function engVocabPlay() {
-    const qs = shuffle(EN_WORDS).slice(0, 10), results = [], wrong = [];
+    const qs = shuffle(enPool()).slice(0, 10), results = [], wrong = [];
     const fromEn = enVocabMode === 'en';
     let i = 0;
     function show() {
       const w = qs[i];
-      const opts = shuffle([w, ...shuffle(EN_WORDS.filter(x => x !== w)).slice(0, 2)]);
+      const opts = shuffle([w, ...enDistractors(w)]);
       h(`<section><div class="panel q-card">
         ${duvDots(results, i, qs.length)}
         <div class="q-ask">${fromEn ? 'מה פירוש המילה?' : 'איך אומרים באנגלית?'}</div>
@@ -1330,7 +1360,17 @@
 
   // 2. spelling: see the Hebrew meaning (and hear the word), type it in English
   function engSpell() {
-    const qs = shuffle(EN_WORDS).slice(0, 10), results = [], wrong = [];
+    h(`<section class="panel">
+      <h2>⌨️ איות</h2>
+      <p>רואים את הפירוש בעברית (ואפשר לשמוע את המילה) וכותבים אותה באנגלית. 10 מילים.</p>
+      ${enListPicker()}
+      <button class="btn teal" id="go">Let's go! 🚀</button>
+    </section>`);
+    bindEnListPicker(engSpell);
+    document.getElementById('go').onclick = engSpellPlay;
+  }
+  function engSpellPlay() {
+    const qs = shuffle(enPool()).slice(0, 10), results = [], wrong = [];
     let i = 0;
     function show() {
       const w = qs[i];
@@ -1353,12 +1393,13 @@
         save();
         input.disabled = true; ['check', 'skip', 'hintB'].forEach(id => { document.getElementById(id).disabled = true; });
         sayEn(w.en);
-        later(() => { i++; i < qs.length ? show() : (engResult(results.filter(Boolean).length, qs.length, engSpell), engReview(wrong)); }, ok ? 1300 : 2600);
+        later(() => { i++; i < qs.length ? show() : (engResult(results.filter(Boolean).length, qs.length, engSpellPlay), engReview(wrong)); }, ok ? 1300 : 2600);
       };
       const check = () => {
         const v = normEn(input.value);
         if (!v) return;
-        const good = [normEn(w.en), w.base, 'to ' + w.base];
+        // a word with the same meaning also counts (for "עדיין" both still and yet are right)
+        const good = EN_WORDS.filter(x => x === w || enSameMeaning(x, w)).flatMap(x => [normEn(x.en), x.base, 'to ' + x.base]);
         if (good.includes(v)) {
           input.classList.add('ok'); sfx('good');
           fb.textContent = hints || tries ? 'Correct! 👍' : pick(EN_PRAISE);
