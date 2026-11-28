@@ -51,7 +51,7 @@
     stats: {
       games: 0, memoryGames: 0, triviaGames: 0, flashSeen: 0, correct: 0, bestStreak: 0, perfectTrivia: 0, memoryBest: {},
       memoryThreeStars: 0, reverseGames: 0, wordsearchGames: 0, wordsFound: 0, searchHard: 0, searchNoHint: 0, early: 0, night: 0,
-      duvGames: 0, duvBuilt: 0, duvMissing: 0, duvPerfect: 0,
+      duvGames: 0, duvBuilt: 0, duvMissing: 0, duvPerfect: 0, duvWritten: 0, duvEnRight: 0,
       engGames: 0, engPerfect: 0, engSpelled: 0, engTenseRight: 0,
       tenGames: 0, tenPerfect: 0, tenGrammarRight: 0, tenWritten: 0, tenDictRight: 0,
     },
@@ -339,6 +339,8 @@
     { id: 'duvPerfect', e: '🌟', t: 'כוכב כיתה א\'',     d: 'הכול נכון במשחק של דובדוב',     v: () => st().duvPerfect, goal: 1 },
     { id: 'duvBuild25', e: '🧱', t: 'בנאי מילים',        d: 'בנית 25 מילים',                 v: () => st().duvBuilt, goal: 25 },
     { id: 'duvMissing30', e: '🕵️', t: 'בלש אותיות',       d: 'מצאת 30 אותיות חסרות',          v: () => st().duvMissing, goal: 30 },
+    { id: 'duvWriter', e: '✍️', t: 'כותב צעיר',          d: 'כתבת 20 מילים',                 v: () => st().duvWritten || 0, goal: 20 },
+    { id: 'duvEnglish', e: '🇬🇧', t: 'Hello!',            d: '30 תשובות נכונות במילים באנגלית', v: () => st().duvEnRight || 0, goal: 30 },
     { id: 'duv20',    e: '🧺', t: 'סל דובדבנים',         d: '20 משחקים באיזור של דובדוב',    v: () => st().duvGames, goal: 20 },
     // Noshnosh's area (English)
     { id: 'eng1',     e: '🌍', t: 'Hello World',          d: 'שיחקת באיזור של נושנוש',        v: () => st().engGames, goal: 1 },
@@ -385,7 +387,7 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, stars, progress, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
+  const SCREENS = { home, stars, progress, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, duvWrite, duvSound, duvEnglish, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
   let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
@@ -988,6 +990,9 @@
     { id: 'duvRead',     emoji: '📖', title: 'קוראים ובוחרים',    sub: 'קוראים מילה ומוצאים תמונה',    tile: 'tile-pink' },
     { id: 'duvBuild',    emoji: '🧩', title: 'בונים מילה',        sub: 'מסדרים אותיות לפי הסדר',       tile: 'tile-orange' },
     { id: 'duvMissing',  emoji: '🕵️', title: 'האות החסרה',        sub: 'איזו אות חסרה במילה? (מאתגר!)', tile: 'tile-blue' },
+    { id: 'duvWrite',    emoji: '✍️', title: 'כותבים מילה',       sub: 'רואים תמונה וכותבים את כל המילה', tile: 'tile-purple' },
+    { id: 'duvSound',    emoji: '🔉', title: 'הצליל הראשון',      sub: 'אות וניקוד – באיזה צליל מתחילה?', tile: 'tile-green' },
+    { id: 'duvEnglish',  emoji: '🇬🇧', title: 'מילים באנגלית',     sub: 'צבעים, משפחה, חיות, פירות וירקות', tile: 'tile-indigo' },
   ];
   const DUV_PRAISE = ['כל הכבוד! 🍒', 'נכון! 👏', 'יופי! 🌟', 'מעולה! 🎉', 'אלוף! 🏆'];
   const voiceOn = () => !!heVoice();
@@ -1199,6 +1204,217 @@
         }
         say(w.w, true);
         later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvMissing); }, ok ? 1600 : 3000);
+      });
+    }
+    show();
+  }
+
+  // 5. writing: see a picture and write the whole word (on-screen letters or the keyboard)
+  const HEB_KEYS = 'אבגדהוזחטיכלמנסעפצקרשת';
+  const FINAL_OF = { 'כ': 'ך', 'מ': 'ם', 'נ': 'ן', 'פ': 'ף', 'צ': 'ץ' };
+  const REGULAR_OF = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
+  let duvKeyHandler = null;
+  document.addEventListener('keydown', e => { if (duvKeyHandler && location.hash === '#duvWrite') duvKeyHandler(e); });
+  function duvWrite() {
+    const qs = shuffle(KIDS.filter(k => { const n = strip(k.w).replace(/[^א-ת]/g, '').length; return n >= 2 && n <= 6; })).slice(0, 8), results = [];
+    let i = 0;
+    function show() {
+      const w = qs[i], target = [...strip(w.w).replace(/[^א-ת]/g, '')];
+      const typed = Array(target.length).fill(''), locked = Array(target.length).fill(false);
+      let tries = 0, hints = 0, busy = false;
+      h(`<section><div class="panel center duv-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="duv-ask">כתבו את המילה</div>
+        <div class="duv-pic">${w.e}</div>
+        <div class="duv-slots" id="slots">${target.map((_, k) => `<div class="duv-slot" data-s="${k}"></div>`).join('')}</div>
+        <div class="row center">${voiceOn() ? '<button class="btn ghost small" id="sayB">🔊 שמעו</button>' : ''}<button class="btn ghost small" id="hintB">💡 אות</button></div>
+        <div class="feedback" id="fb"></div>
+        <div class="heb-kbd">
+          <div class="kbd-row">${[...HEB_KEYS].map(c => `<button class="kbd-key" data-k="${c}">${c}</button>`).join('')}</div>
+          <div class="kbd-row">${Object.values(FINAL_OF).map(c => `<button class="kbd-key final" data-k="${c}">${c}</button>`).join('')}
+            <button class="kbd-key wide" data-k="del">⌫ מחק</button><button class="kbd-key wide ok" data-k="check">בדיקה ✔️</button></div>
+        </div>
+      </div></section>`);
+      const slots = [...$app.querySelectorAll('.duv-slot')], fb = document.getElementById('fb');
+      const sb = document.getElementById('sayB'); if (sb) sb.onclick = () => say(w.w, true);
+      if (voiceOn()) later(() => say(w.w, true), 300);
+      const paint = () => slots.forEach((s, k) => { s.textContent = typed[k]; s.classList.toggle('filled', !!typed[k]); s.classList.toggle('locked', locked[k]); });
+      const put = c => {
+        if (busy) return;
+        const k = typed.findIndex((t, j) => !t && !locked[j]);
+        if (k < 0) return;
+        typed[k] = c; sfx('tap'); paint();
+      };
+      const del = () => {
+        if (busy) return;
+        for (let k = typed.length - 1; k >= 0; k--) if (typed[k] && !locked[k]) { typed[k] = ''; break; }
+        paint();
+      };
+      const check = () => {
+        if (busy) return;
+        if (typed.some(t => !t)) { fb.textContent = 'עוד לא סיימתם לכתוב 🙂'; return; }
+        tries++;
+        let tip = '';
+        target.forEach((c, k) => {
+          if (typed[k] === c) { locked[k] = true; return; }
+          if (REGULAR_OF[c] && typed[k] === REGULAR_OF[c]) tip = `בסוף מילה כותבים ${c} (${c} סופית)`;
+          if (REGULAR_OF[typed[k]] && REGULAR_OF[typed[k]] === c) tip = `${typed[k]} סופית כותבים רק בסוף מילה`;
+          slots[k].classList.add('wrong');
+        });
+        const ok = locked.every(Boolean);
+        if (ok) {
+          busy = true;
+          results.push(tries === 1 && hints === 0);
+          S.stats.duvWritten = (S.stats.duvWritten || 0) + 1; save();
+          sfx('good'); confetti(40);
+          fb.innerHTML = `${pick(DUV_PRAISE)} <span class="duv-word-small">${w.w}</span>`;
+          say(w.w, true);
+          paint();
+          later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvWrite); }, 1900);
+          return;
+        }
+        sfx('bad');
+        fb.textContent = tip || 'כמעט! האותיות האדומות לא נכונות – נסו שוב';
+        busy = true;
+        later(() => {
+          slots.forEach(s => s.classList.remove('wrong'));
+          target.forEach((_, k) => { if (!locked[k]) typed[k] = ''; });
+          busy = false; paint();
+          if (tries >= 3) { // after three tries, show the word and move on
+            busy = true; results.push(false);
+            target.forEach((c, k) => { typed[k] = c; locked[k] = true; });
+            paint(); fb.innerHTML = `ככה כותבים: <span class="duv-word-small">${w.w}</span>`; say(w.w, true);
+            later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvWrite); }, 2600);
+          }
+        }, 1200);
+      };
+      document.getElementById('hintB').onclick = () => {
+        if (busy) return;
+        const k = target.findIndex((c, j) => !locked[j] && typed[j] !== c);
+        if (k < 0) return;
+        hints++; typed[k] = target[k]; locked[k] = true; sfx('tap'); paint();
+      };
+      $app.querySelectorAll('.kbd-key').forEach(b => b.onclick = () => {
+        const k = b.dataset.k;
+        if (k === 'del') del(); else if (k === 'check') check(); else put(k);
+      });
+      duvKeyHandler = e => {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (/^[א-ת]$/.test(e.key)) { e.preventDefault(); put(e.key); }
+        else if (e.key === 'Backspace') { e.preventDefault(); del(); }
+        else if (e.key === 'Enter') { e.preventDefault(); check(); }
+      };
+    }
+    show();
+  }
+
+  // 6. the first sound: which letter + vowel does the word start with? (niqqud)
+  const VOWEL_SIGNS = { a: 'ָ', e: 'ֵ', i: 'ִ', o: 'וֹ', u: 'וּ' };
+  function firstSound(w) {
+    const p0 = w.parts[0] || '', marks = p0.slice(1);
+    let g = null;
+    if (/[ֲַָ]/.test(marks)) g = 'a';
+    else if (/[ֱֵֶ]/.test(marks)) g = 'e';
+    else if (/ִ/.test(marks)) g = 'i';
+    else if (/[ֳֹ]/.test(marks)) g = 'o';
+    else if (/ֻ/.test(marks)) g = 'u';
+    else if (!/ְ/.test(marks) && w.parts[1]) { // no vowel on the first letter: וֹ / וּ after it
+      if (w.parts[1] === 'וֹ') g = 'o';
+      else if (w.parts[1] === 'וּ') g = 'u';
+    }
+    if (!g) return null;
+    const cons = p0[0] + marks.replace(/[^ּׁׂ]/g, ''); // keep dagesh and the shin dot
+    // the word's own vowel mark (patach / kamatz, tsere / segol...), so the right option looks like the word
+    const own = (marks.match(/[ֱֲֳִֵֶַָֹֻ]/) || [])[0];
+    return { g, cons, sign: own || VOWEL_SIGNS[g] };
+  }
+  const syllable = (fs, g) => fs.cons + (g === fs.g ? fs.sign : VOWEL_SIGNS[g]);
+  function duvSound() {
+    const pool = KIDS.filter(k => firstSound(k));
+    const qs = shuffle(pool).slice(0, 10), results = [];
+    let i = 0;
+    function show() {
+      const w = qs[i], fs = firstSound(w);
+      const groups = shuffle([fs.g, ...shuffle(Object.keys(VOWEL_SIGNS).filter(g => g !== fs.g)).slice(0, 2)]);
+      const v = voiceOn();
+      h(`<section><div class="panel center duv-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="duv-ask">באיזה צליל מתחילה המילה?</div>
+        <div class="duv-pic">${w.e}</div>
+        <div class="duv-word ${v ? 'hide' : ''}" id="dw">${w.w}</div>
+        ${v ? '<button class="btn ghost small" id="sayB">🔊 שמעו את המילה</button>' : ''}
+        <div class="duv-opts">${groups.map(g => `<button class="duv-letter syl" data-g="${g}">${syllable(fs, g)}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      if (v) { later(() => say(w.w, true), 250); document.getElementById('sayB').onclick = () => say(w.w, true); }
+      const btns = [...$app.querySelectorAll('.duv-letter')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = b.dataset.g === fs.g;
+        results.push(ok);
+        document.getElementById('dw').classList.remove('hide');
+        b.classList.add(ok ? 'right' : 'wrong');
+        if (!ok) btns.find(x => x.dataset.g === fs.g).classList.add('right');
+        sfx(ok ? 'good' : 'bad');
+        document.getElementById('fb').textContent = ok ? pick(DUV_PRAISE) : `המילה מתחילה ב-${syllable(fs, fs.g)}`;
+        say(w.w, true);
+        later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvSound); }, ok ? 1500 : 2800);
+      });
+    }
+    show();
+  }
+
+  // 7. first English words: colors, family, animals, fruit and vegetables
+  const KIDS_EN = window.KIDS_EN || {};
+  let duvEnCat = 'colors';
+  const enPic = (x, big) => x[3].startsWith('#') ? `<span class="swatch ${big ? 'big' : ''}" style="background:${x[3]}"></span>` : `<span class="en-pic ${big ? 'big' : ''}">${x[3]}</span>`;
+  function duvEnglish() {
+    const cat = KIDS_EN[duvEnCat];
+    h(`<section>
+      <div class="panel">
+        <h2>🇬🇧 מילים ראשונות באנגלית</h2>
+        <div class="chips">${Object.entries(KIDS_EN).map(([k, c]) => `<button class="chip ${duvEnCat === k ? 'on' : ''}" data-c="${k}">${c.title}</button>`).join('')}</div>
+        <p class="muted">לוחצים על כרטיס כדי לשמוע איך אומרים באנגלית. כשמוכנים – למשחק!</p>
+        <button class="btn cherry" id="go">🎧 למשחק: שומעים ובוחרים</button>
+        ${enVoice() ? '' : '<p class="why">⚠️ אין במכשיר קול באנגלית, אז במשחק תופיע המילה כתובה.</p>'}
+      </div>
+      <div class="en-cards">${cat.words.map((x, k) => `<button class="en-card" data-i="${k}">
+        ${enPic(x)}<b class="en">${x[0]}</b><span class="translit">${x[1]}</span><small>${x[2]}</small></button>`).join('')}</div>
+    </section>`);
+    $app.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { duvEnCat = b.dataset.c; sfx('tap'); duvEnglish(); });
+    $app.querySelectorAll('.en-card').forEach(b => b.onclick = () => {
+      const x = cat.words[+b.dataset.i];
+      sayEn(x[0]); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+    });
+    document.getElementById('go').onclick = duvEnglishPlay;
+  }
+  function duvEnglishPlay() {
+    const words = KIDS_EN[duvEnCat].words;
+    const qs = shuffle(words).slice(0, 8), results = [];
+    let i = 0;
+    function show() {
+      const x = qs[i];
+      const opts = shuffle([x, ...shuffle(words.filter(y => y !== x && y[2] !== x[2])).slice(0, 3)]);
+      const v = !!enVoice();
+      h(`<section><div class="panel center duv-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="duv-ask">${v ? 'הקשיבו ובחרו את התמונה הנכונה' : 'איזו תמונה מתאימה למילה?'}</div>
+        ${v ? '<button class="btn cherry big-play" id="sayB">🔊 שמעו שוב</button>' : `<div class="q-word en">${x[0]}</div><div class="translit">${x[1]}</div>`}
+        <div class="en-opts">${opts.map((o, k) => `<button class="en-opt" data-k="${k}">${enPic(o, true)}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      if (v) { later(() => sayEn(x[0]), 300); document.getElementById('sayB').onclick = () => sayEn(x[0]); }
+      const btns = [...$app.querySelectorAll('.en-opt')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(y => y.disabled = true);
+        const ok = opts[+b.dataset.k] === x;
+        results.push(ok); if (ok) S.stats.duvEnRight = (S.stats.duvEnRight || 0) + 1;
+        b.classList.add(ok ? 'right' : 'wrong');
+        if (!ok) btns[opts.indexOf(x)].classList.add('right');
+        sfx(ok ? 'good' : 'bad');
+        document.getElementById('fb').innerHTML = `${ok ? pick(DUV_PRAISE) + ' ' : ''}<b class="en">${x[0]}</b> = ${x[2]} <span class="translit">(${x[1]})</span>`;
+        sayEn(x[0]);
+        later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvEnglishPlay); }, ok ? 1700 : 2800);
       });
     }
     show();

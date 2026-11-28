@@ -303,6 +303,43 @@ body.duv { background: linear-gradient(160deg, #fecdd3 0%, #fbcfe8 45%, #fde68a 
 .duv-found { color: #15803d; background: #dcfce7; border-radius: 10px; padding: 0 4px; }
 .duv-found.fix { color: #b91c1c; background: #fee2e2; }
 
+/* Duvduv: writing keyboard, first sound, English words */
+.duv-slot.locked { border-color: #22c55e; background: #f0fdf4; }
+.duv-slot.wrong { border-color: #ef4444; background: #fee2e2; animation: wobble .35s; }
+.duv-word-small { font-family: var(--font-niqqud); font-size: 30px; color: #be123c; margin-inline-start: 6px; }
+.heb-kbd { margin-top: 14px; background: #fff1f2; border-radius: 18px; padding: 10px 6px; }
+.kbd-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 6px; }
+.kbd-key {
+  min-width: 42px; height: 48px; border: 0; border-radius: 12px; background: #fff; box-shadow: 0 3px 0 rgba(0, 0, 0, .15);
+  font-family: var(--font-niqqud); font-size: 26px; font-weight: 700; color: #1e1b4b;
+}
+.kbd-key:active { transform: translateY(3px); box-shadow: none; }
+.kbd-key.final { background: #fef3c7; }
+.kbd-key.wide { min-width: 92px; font-family: var(--font-title); font-size: 17px; }
+.kbd-key.ok { background: #22c55e; color: #fff; }
+@media (max-width: 420px) { .kbd-key { min-width: 36px; height: 44px; font-size: 23px; } }
+.duv-letter.syl { width: 104px; font-size: 50px; }
+.swatch { display: inline-block; width: 56px; height: 56px; border-radius: 50%; border: 3px solid #e5e7eb; }
+.swatch.big { width: 84px; height: 84px; }
+.en-pic { font-size: 48px; line-height: 1.1; }
+.en-pic.big { font-size: 72px; }
+.en-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.en-card {
+  border: 0; background: #fff; border-radius: 20px; padding: 14px 8px; box-shadow: 0 5px 0 rgba(0, 0, 0, .1);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.en-card b { font-family: var(--font-title); font-size: 22px; color: #4338ca; }
+.en-card.pop { animation: pop2 .4s; }
+.translit { font-family: var(--font-niqqud); color: #be123c; font-size: 18px; }
+.en-card small { color: var(--muted); font-family: var(--font-niqqud); font-size: 15px; }
+.en-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 380px; margin: 18px auto 8px; }
+.en-opt {
+  border: 0; background: #fff; border-radius: 22px; padding: 14px; box-shadow: 0 5px 0 rgba(0, 0, 0, .14);
+  display: flex; align-items: center; justify-content: center; min-height: 112px;
+}
+.en-opt.right { background: #bbf7d0; animation: pop2 .35s; }
+.en-opt.wrong { background: #fecaca; animation: wobble .35s; }
+
 /* Luli's area (6th grade) */
 .tile-luli { background: linear-gradient(135deg, #c084fc, #db2777); }
 .luli-hero { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #faf5ff, #fdf2f8); }
