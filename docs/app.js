@@ -340,7 +340,7 @@
     { id: 'duvBuild25', e: '🧱', t: 'בנאי מילים',        d: 'בנית 25 מילים',                 v: () => st().duvBuilt, goal: 25 },
     { id: 'duvMissing30', e: '🕵️', t: 'בלש אותיות',       d: 'מצאת 30 אותיות חסרות',          v: () => st().duvMissing, goal: 30 },
     { id: 'duvWriter', e: '✍️', t: 'כותב צעיר',          d: 'כתבת 20 מילים',                 v: () => st().duvWritten || 0, goal: 20 },
-    { id: 'duvEnglish', e: '🇬🇧', t: 'Hello!',            d: '30 תשובות נכונות במילים באנגלית', v: () => st().duvEnRight || 0, goal: 30 },
+    { id: 'duvEnglish', e: '🗣️', t: 'Hello!',            d: '30 תשובות נכונות במילים באנגלית', v: () => st().duvEnRight || 0, goal: 30 },
     { id: 'duv20',    e: '🧺', t: 'סל דובדבנים',         d: '20 משחקים באיזור של דובדוב',    v: () => st().duvGames, goal: 20 },
     // Noshnosh's area (English)
     { id: 'eng1',     e: '🌍', t: 'Hello World',          d: 'שיחקת באיזור של נושנוש',        v: () => st().engGames, goal: 1 },
@@ -992,7 +992,7 @@
     { id: 'duvMissing',  emoji: '🕵️', title: 'האות החסרה',        sub: 'איזו אות חסרה במילה? (מאתגר!)', tile: 'tile-blue' },
     { id: 'duvWrite',    emoji: '✍️', title: 'כותבים מילה',       sub: 'רואים תמונה וכותבים את כל המילה', tile: 'tile-purple' },
     { id: 'duvSound',    emoji: '🔉', title: 'הצליל הראשון',      sub: 'אות וניקוד – באיזה צליל מתחילה?', tile: 'tile-green' },
-    { id: 'duvEnglish',  emoji: '🇬🇧', title: 'מילים באנגלית',     sub: 'צבעים, משפחה, חיות, פירות וירקות', tile: 'tile-indigo' },
+    { id: 'duvEnglish',  emoji: '🗣️', title: 'מילים באנגלית',     sub: 'צבעים, משפחה, חיות, פירות וירקות', tile: 'tile-indigo' },
   ];
   const DUV_PRAISE = ['כל הכבוד! 🍒', 'נכון! 👏', 'יופי! 🌟', 'מעולה! 🎉', 'אלוף! 🏆'];
   const voiceOn = () => !!heVoice();
@@ -1372,7 +1372,7 @@
     const cat = KIDS_EN[duvEnCat];
     h(`<section>
       <div class="panel">
-        <h2>🇬🇧 מילים ראשונות באנגלית</h2>
+        <h2>🗣️ מילים ראשונות באנגלית</h2>
         <div class="chips">${Object.entries(KIDS_EN).map(([k, c]) => `<button class="chip ${duvEnCat === k ? 'on' : ''}" data-c="${k}">${c.title}</button>`).join('')}</div>
         <p class="muted">לוחצים על כרטיס כדי לשמוע איך אומרים באנגלית. כשמוכנים – למשחק!</p>
         <button class="btn cherry" id="go">🎧 למשחק: שומעים ובוחרים</button>
