@@ -1,6 +1,6 @@
 // Offline support. Bump VERSION whenever any file in docs/ changes.
-const VERSION = 'wordgames-v16';
-const FILES = ['./', 'index.html', 'config.js?v=16', 'styles.css?v=16', 'app.js?v=16', 'words.js?v=16', 'kids-words.js?v=16', 'english-data.js?v=16', 'tenth-data.js?v=16', 'manifest.webmanifest',
+const VERSION = 'wordgames-v17';
+const FILES = ['./', 'index.html', 'config.js?v=17', 'styles.css?v=17', 'app.js?v=17', 'words.js?v=17', 'kids-words.js?v=17', 'english-data.js?v=17', 'tenth-data.js?v=17', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'];
 
 self.addEventListener('install', e => {

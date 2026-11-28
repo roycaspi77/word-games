@@ -340,6 +340,14 @@ body.duv { background: linear-gradient(160deg, #fecdd3 0%, #fbcfe8 45%, #fde68a 
 .en-opt.right { background: #bbf7d0; animation: pop2 .35s; }
 .en-opt.wrong { background: #fecaca; animation: wobble .35s; }
 
+.rhyme-target { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 6px 0; }
+.duv-pic.small { font-size: 72px; }
+.duv-pic-btn.rhyme { flex-direction: column; height: 132px; width: 116px; gap: 2px; }
+.duv-pic-btn.rhyme span { font-size: 58px; line-height: 1.1; }
+.duv-pic-btn.rhyme small { font-family: var(--font-niqqud); font-size: 22px; font-weight: 700; color: #1e1b4b; }
+.rhyme-end { font-family: var(--font-niqqud); font-size: 24px; color: #be123c; background: #fff1f2; border-radius: 8px; padding: 0 6px; }
+.riddle { font-family: var(--font-niqqud); font-size: 32px; line-height: 1.7; font-weight: 700; color: #1e1b4b; margin: 10px 4px 12px; }
+
 /* Luli's area (6th grade) */
 .tile-luli { background: linear-gradient(135deg, #c084fc, #db2777); }
 .luli-hero { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #faf5ff, #fdf2f8); }

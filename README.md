@@ -19,6 +19,8 @@ The home screen has three areas plus achievements:
   - *האות החסרה* (the hardest one): a letter is missing from the middle or end of the word, and the wrong options are look-alike or sound-alike letters (ב/כ/פ, ד/ר, ה/ח/א, ו/ז, ס/ש, ט/ת...).
   - *כותבים מילה*: see a picture and write the whole word on the on-screen letter bar (with the final letters) or a keyboard. Wrong letters are marked, with a tip for final letters (בסוף מילה כותבים ם). It has a letter hint and 3 tries.
   - *הצליל הראשון*: niqqud practice. Choose the word's first sound (letter + vowel, e.g. בָּ / בִּ / בּוּ). The 1st-grade program focuses on letter knowledge and reading words with niqqud.
+  - *חרוזים*: which picture rhymes with the word? It uses 12 rhyme groups (`KIDS_RHYMES`), and the wrong options never rhyme.
+  - *מי אני?*: read a short riddle with niqqud ("אֲנִי שׂוֹחֶה בַּיָּם") and pick the picture. There are 18 riddles (`KIDS_RIDDLES`); riddles that could fit each other (sky, water, sweets) are never offered together.
   - *מילים באנגלית*: first English words in 4 categories (colors, family, animals, fruit and vegetables). Learning cards with sound and a Hebrew-letter pronunciation, then a "listen and choose the picture" game.
   - It reads words and letter names aloud when the device has a Hebrew voice.
 - **🌍 האיזור של נושנוש**: English for 8th grade, with its data in `docs/english-data.js`:

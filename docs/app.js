@@ -341,6 +341,7 @@
     { id: 'duvMissing30', e: '🕵️', t: 'בלש אותיות',       d: 'מצאת 30 אותיות חסרות',          v: () => st().duvMissing, goal: 30 },
     { id: 'duvWriter', e: '✍️', t: 'כותב צעיר',          d: 'כתבת 20 מילים',                 v: () => st().duvWritten || 0, goal: 20 },
     { id: 'duvEnglish', e: '🗣️', t: 'Hello!',            d: '30 תשובות נכונות במילים באנגלית', v: () => st().duvEnRight || 0, goal: 30 },
+    { id: 'duvReader', e: '📗', t: 'קורא אלוף',          d: 'פתרת 20 חידות מי אני',            v: () => st().duvRiddles || 0, goal: 20 },
     { id: 'duv20',    e: '🧺', t: 'סל דובדבנים',         d: '20 משחקים באיזור של דובדוב',    v: () => st().duvGames, goal: 20 },
     // Noshnosh's area (English)
     { id: 'eng1',     e: '🌍', t: 'Hello World',          d: 'שיחקת באיזור של נושנוש',        v: () => st().engGames, goal: 1 },
@@ -387,7 +388,7 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, stars, progress, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, duvWrite, duvSound, duvEnglish, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
+  const SCREENS = { home, stars, progress, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, duvWrite, duvSound, duvRhyme, duvSentence, duvEnglish, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
   let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
@@ -991,6 +992,8 @@
     { id: 'duvBuild',    emoji: '🧩', title: 'בונים מילה',        sub: 'מסדרים אותיות לפי הסדר',       tile: 'tile-orange' },
     { id: 'duvMissing',  emoji: '🕵️', title: 'האות החסרה',        sub: 'איזו אות חסרה במילה? (מאתגר!)', tile: 'tile-blue' },
     { id: 'duvWrite',    emoji: '✍️', title: 'כותבים מילה',       sub: 'רואים תמונה וכותבים את כל המילה', tile: 'tile-purple' },
+    { id: 'duvRhyme',    emoji: '🎵', title: 'חרוזים',            sub: 'איזו מילה מתחרזת?',             tile: 'tile-orange' },
+    { id: 'duvSentence', emoji: '🧩', title: 'מי אני?',           sub: 'קוראים משפט ומוצאים תמונה',     tile: 'tile-teal' },
     { id: 'duvSound',    emoji: '🔉', title: 'הצליל הראשון',      sub: 'אות וניקוד – באיזה צליל מתחילה?', tile: 'tile-green' },
     { id: 'duvEnglish',  emoji: '🗣️', title: 'מילים באנגלית',     sub: 'צבעים, משפחה, חיות, פירות וירקות', tile: 'tile-indigo' },
   ];
@@ -1359,6 +1362,77 @@
         document.getElementById('fb').textContent = ok ? pick(DUV_PRAISE) : `המילה מתחילה ב-${syllable(fs, fs.g)}`;
         say(w.w, true);
         later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvSound); }, ok ? 1500 : 2800);
+      });
+    }
+    show();
+  }
+
+  // 8. rhymes: which picture rhymes with this word?
+  const KIDS_RHYMES = (window.KIDS_RHYMES || []).map(([end, words]) => ({ end, words: words.map(([e, w]) => ({ e, w })) }));
+  function duvRhyme() {
+    const all = KIDS_RHYMES.flatMap((g, gi) => g.words.map(x => ({ ...x, gi })));
+    const qs = shuffle(all).slice(0, 10), results = [];
+    let i = 0;
+    function show() {
+      const x = qs[i], g = KIDS_RHYMES[x.gi];
+      const right = pick(g.words.filter(y => y.w !== x.w));
+      const others = shuffle(all.filter(y => y.gi !== x.gi && y.e !== x.e && y.e !== right.e));
+      const wrong = [];
+      for (const y of others) { if (wrong.length === 2) break; if (!wrong.some(z => z.gi === y.gi)) wrong.push(y); }
+      const opts = shuffle([right, ...wrong]);
+      h(`<section><div class="panel center duv-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="duv-ask">איזו מילה מתחרזת עם</div>
+        <div class="rhyme-target"><span class="duv-pic small">${x.e}</span><span class="duv-word">${x.w}</span></div>
+        ${voiceOn() ? '<button class="btn ghost small" id="sayB">🔊 שמעו</button>' : ''}
+        <div class="duv-opts">${opts.map((o, k) => `<button class="duv-pic-btn rhyme" data-k="${k}"><span>${o.e}</span><small>${o.w}</small></button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      if (voiceOn()) { later(() => say(x.w, true), 250); document.getElementById('sayB').onclick = () => say(x.w, true); }
+      const btns = [...$app.querySelectorAll('.duv-pic-btn')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(y => y.disabled = true);
+        const ok = opts[+b.dataset.k] === right;
+        results.push(ok);
+        b.classList.add(ok ? 'right' : 'wrong');
+        if (!ok) btns[opts.indexOf(right)].classList.add('right');
+        sfx(ok ? 'good' : 'bad');
+        document.getElementById('fb').innerHTML = `${ok ? pick(DUV_PRAISE) + ' ' : ''}<span class="duv-word-small">${x.w} – ${right.w}</span> מִתְחָרְזוֹת 🎵`;
+        say(`${x.w}, ${right.w}`, true);
+        later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvRhyme); }, ok ? 1900 : 3000);
+      });
+    }
+    show();
+  }
+
+  // 9. reading sentences: read a riddle and find the picture
+  const KIDS_RIDDLES = (window.KIDS_RIDDLES || []).map(([e, w, s, g]) => ({ e, w, s, g }));
+  function duvSentence() {
+    const qs = shuffle(KIDS_RIDDLES).slice(0, 8), results = [];
+    let i = 0;
+    function show() {
+      const r = qs[i];
+      const opts = shuffle([r, ...shuffle(KIDS_RIDDLES.filter(y => y !== r && !(r.g && y.g === r.g))).slice(0, 2)]);
+      h(`<section><div class="panel center duv-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="duv-ask">קִרְאוּ: מִי אֲנִי?</div>
+        <div class="riddle">${r.s}</div>
+        ${voiceOn() ? '<button class="btn ghost small" id="sayB">🔊 עזרה: הקריאו לי</button>' : ''}
+        <div class="duv-opts">${opts.map((o, k) => `<button class="duv-pic-btn" data-k="${k}">${o.e}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const sb = document.getElementById('sayB'); if (sb) sb.onclick = () => say(r.s, true);
+      const btns = [...$app.querySelectorAll('.duv-pic-btn')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(y => y.disabled = true);
+        const ok = opts[+b.dataset.k] === r;
+        results.push(ok); if (ok) S.stats.duvRiddles = (S.stats.duvRiddles || 0) + 1;
+        b.classList.add(ok ? 'right' : 'wrong');
+        if (!ok) btns[opts.indexOf(r)].classList.add('right');
+        sfx(ok ? 'good' : 'bad');
+        document.getElementById('fb').innerHTML = `${ok ? pick(DUV_PRAISE) + ' ' : ''}אֲנִי <span class="duv-word-small">${r.w}</span>`;
+        say(r.w, true);
+        later(() => { i++; i < qs.length ? show() : duvResult(results.filter(Boolean).length, qs.length, duvSentence); }, ok ? 1800 : 3000);
       });
     }
     show();
