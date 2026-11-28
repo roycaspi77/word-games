@@ -435,10 +435,10 @@
         </div>
       </div>
       <div class="game-grid areas">
-        <button class="game-tile tile-luli" data-go="hebrew"><span class="emoji">${LULI_ICON}</span><span class="title">האיזור של לולי</span><span class="sub">משחקי עברית לכיתה ו'</span></button>
-        <button class="game-tile tile-cherry" data-go="duvduv"><span class="emoji">🍒</span><span class="title">האיזור של דובדוב</span><span class="sub">משחקי עברית לכיתה א'</span></button>
-        <button class="game-tile tile-indigo" data-go="english"><span class="emoji">${ENG_ICON}</span><span class="title">האיזור של נושנוש</span><span class="sub">אנגלית לכיתה ח'</span></button>
-        <button class="game-tile tile-ball" data-go="tenth"><span class="emoji">${TEN_ICON}</span><span class="title">האיזור של יובלולו</span><span class="sub">אנגלית לכיתה י'</span></button>
+        <button class="game-tile tile-luli" data-go="hebrew"><span class="emoji">${LULI_ICON}</span><span class="title">האיזור של לולי</span></button>
+        <button class="game-tile tile-cherry" data-go="duvduv"><span class="emoji">🍒</span><span class="title">האיזור של דובדוב</span></button>
+        <button class="game-tile tile-indigo" data-go="english"><span class="emoji">${ENG_ICON}</span><span class="title">האיזור של נושנוש</span></button>
+        <button class="game-tile tile-ball" data-go="tenth"><span class="emoji">${TEN_ICON}</span><span class="title">האיזור של יובלולו</span></button>
         ${ONLINE ? `<button class="game-tile tile-teal" data-go="progress"><span class="emoji">📊</span><span class="title">${S.me && S.me.role === 'admin' ? 'ההתקדמות של כולם' : 'ההתקדמות שלי'}</span><span class="sub">משחקים, הצלחה וכוכבים</span></button>` : ''}
         <button class="game-tile tile-blue" data-go="badges"><span class="emoji">🏆</span><span class="title">הישגים</span><span class="sub">${S.badges.length} מתוך ${BADGES.length} תגים</span></button>
       </div>
