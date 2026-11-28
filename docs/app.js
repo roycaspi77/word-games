@@ -438,8 +438,8 @@
         </div>
       </div>
       <div class="game-grid areas">
-        <button class="game-tile tile-luli" data-go="hebrew"><span class="emoji">${LULI_ICON}</span><span class="title">האיזור של לולי</span></button>
         <button class="game-tile tile-cherry" data-go="duvduv"><span class="emoji">🍒</span><span class="title">האיזור של דובדוב</span></button>
+        <button class="game-tile tile-luli" data-go="hebrew"><span class="emoji">${LULI_ICON}</span><span class="title">האיזור של לולי</span></button>
         <button class="game-tile tile-indigo" data-go="english"><span class="emoji">${ENG_ICON}</span><span class="title">האיזור של נושנוש</span></button>
         <button class="game-tile tile-ball" data-go="tenth"><span class="emoji">${TEN_ICON}</span><span class="title">האיזור של יובלולו</span></button>
         ${ONLINE ? `<button class="game-tile tile-teal" data-go="progress"><span class="emoji">📊</span><span class="title">${S.me && S.me.role === 'admin' ? 'ההתקדמות של כולם' : 'ההתקדמות שלי'}</span><span class="sub">משחקים, הצלחה וכוכבים</span></button>` : ''}
