@@ -35,6 +35,12 @@ The home screen has three areas plus achievements:
   - *הווה פשוט או מתמשך?*: complete 10 sentences (5 of each tense) by choosing or typing. Each answer shows why.
   - *מילות זמן*: decide whether a time expression goes with Present Simple or Present Progressive.
   - *תזכורת כללים*: a rules card covering when to use each tense, how to build it, spelling rules, time words and stative verbs.
+  - 8th-grade games, built on level A2 (Basic User II), the official Band II word list and the national 9th-grade English exam format:
+    - *Band II list* (77 words) in the vocabulary and spelling games.
+    - *דקדוק כיתה ח'*: Present Perfect / Past Simple, Past Progressive, will / going to, modals, comparatives, first conditional, who / which / where, much / many / few / little, -ing / to, and passive.
+    - *V1 · V2 · V3*: 49 irregular verbs, asking for the past or the past participle. Choose or type.
+    - *מחברים משפטים*: conjunctions for complex sentences (because, so, although, unless, while, so that…).
+    - *הבנת הנקרא*: a blog post, an informative text (the Dead Sea) and an interview.
 - **🏀 האיזור של יובלולו**: English for 10th grade, built on the Israeli Ministry of Education curriculum, with its data in `docs/tenth-data.js` and all texts original:
   - *אוצר מילים*: 46 words from Band III (Core 1) List A. Two modes: the meaning, or completing a sentence in context.
   - *דקדוק*: 42 items over Present Perfect/Past Simple, Passive, Conditionals, Reported Speech, Relative Clauses and Modals. Each answer has a Hebrew explanation.

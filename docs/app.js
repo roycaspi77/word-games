@@ -334,6 +334,9 @@
     { id: 'words100', e: '📚', t: 'תולעת ספרים',        d: 'שלטת ב-100 מילים',              v: masteredCount, goal: 100 },
     { id: 'words200', e: '🏰', t: 'מגדל של מילים',      d: 'שלטת ב-200 מילים',              v: masteredCount, goal: 200 },
     { id: 'wordsAll', e: '👑', t: 'מלך המילים',          d: 'שלטת בכל המילים!',              v: masteredCount, goal: WORDS.length },
+    // Nushnush 8th grade
+    { id: 'engGram50', e: '🧠', t: 'Grammar Star',      d: '50 תשובות נכונות בדקדוק של נושנוש', v: () => st().engGrammarRight || 0, goal: 50 },
+    { id: 'engReader', e: '📰', t: 'Reader',             d: 'פתרת את כל קטעי הקריאה של נושנוש', v: () => Object.keys(S.engRead || {}).length, goal: (window.EN_READING || []).length },
     // Luli's English
     { id: 'le1',      e: '🗣️', t: 'Hi Luli!',            d: 'שיחקת באנגלית של לולי',          v: () => st().leGames || 0, goal: 1 },
     { id: 'lePerfect', e: '🌟', t: 'A+',                 d: 'סבב מושלם באנגלית של לולי',      v: () => st().lePerfect || 0, goal: 1 },
@@ -393,7 +396,7 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, stars, progress, hebrew, leEnglish, leVocab, leGrammar, lePast, leBuild, leReading, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, duvWrite, duvSound, duvRhyme, duvSentence, duvEnglish, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
+  const SCREENS = { home, stars, progress, hebrew, leEnglish, leVocab, leGrammar, lePast, leBuild, leReading, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, duvWrite, duvSound, duvRhyme, duvSentence, duvEnglish, english, engVocab, engSpell, engTense, engSignal, engRules, engGrammar8, engForms, engJoin, engReading, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
   let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
@@ -1501,10 +1504,10 @@
     show();
   }
 
-  // ===== Noshnosh's area (האיזור של נושנוש): English for 8th grade =====
+  // ===== Nushnush's area (האיזור של נושנוש): English for 8th grade =====
   // vocabulary comes in lists (list 1 = the first words, list 2 = added later); a word appears once
   const EN_WORDS = [];
-  [[window.EN_WORDS_RAW, 1], [window.EN_WORDS_RAW_2, 2]].forEach(([raw, list]) => (raw || '').split('\n').forEach(line => {
+  [[window.EN_WORDS_RAW, 1], [window.EN_WORDS_RAW_2, 2], [window.EN_WORDS_RAW_3, 3]].forEach(([raw, list]) => (raw || '').split('\n').forEach(line => {
     const i = line.indexOf('|'); if (i < 0) return;
     const en = line.slice(0, i).trim(), he = line.slice(i + 1).trim();
     const base = en.replace(/^to\s+/i, '').toLowerCase();
@@ -1520,7 +1523,7 @@
   function enListPicker() {
     return `<div class="label">על אילו מילים משחקים?</div><div class="chips">
       <button class="chip ${enList === 'all' ? 'on' : ''}" data-list="all">כל המילים (${EN_WORDS.length})</button>
-      ${EN_LISTS.map(l => `<button class="chip ${enList === String(l) ? 'on' : ''}" data-list="${l}">רשימה ${l}${l === EN_LISTS[EN_LISTS.length - 1] && l > 1 ? ' 🆕' : ''} (${EN_WORDS.filter(w => w.list === l).length})</button>`).join('')}
+      ${EN_LISTS.map(l => `<button class="chip ${enList === String(l) ? 'on' : ''}" data-list="${l}">${esc((window.EN_LIST_NAMES || {})[l] || 'רשימה ' + l)}${l === EN_LISTS[EN_LISTS.length - 1] && l > 1 ? ' 🆕' : ''} (${EN_WORDS.filter(w => w.list === l).length})</button>`).join('')}
     </div>`;
   }
   function bindEnListPicker(rerender) {
@@ -1552,6 +1555,10 @@
     { id: 'engTense',  emoji: '⏱️', title: 'הווה פשוט או מתמשך?', sub: 'Present Simple / Progressive', tile: 'tile-purple' },
     { id: 'engSignal', emoji: '🚦', title: 'מילות זמן',          sub: 'לאיזה זמן שייכת המילה?',          tile: 'tile-orange' },
     { id: 'engRules',  emoji: '📘', title: 'תזכורת כללים',       sub: 'כל מה שצריך לדעת על שני הזמנים',  tile: 'tile-green' },
+    { id: 'engGrammar8', emoji: '🧩', title: "דקדוק כיתה ח'",      sub: 'Present Perfect, Modals, If...',    tile: 'tile-indigo' },
+    { id: 'engForms',  emoji: '🔁', title: 'V1 · V2 · V3',        sub: 'go – went – gone',                  tile: 'tile-cherry' },
+    { id: 'engJoin',   emoji: '🔗', title: 'מחברים משפטים',      sub: 'because, although, unless...',      tile: 'tile-pink' },
+    { id: 'engReading', emoji: '📖', title: 'הבנת הנקרא',        sub: 'בלוג, טקסט מידע וראיון',            tile: 'tile-teal' },
   ];
   const EN_PRAISE = ['Great job! 🎉', 'Correct! 👏', 'Excellent! 🌟', 'Well done! 🏆', 'Perfect! ✨'];
   const normEn = s => s.toLowerCase().replace(/[’`]/g, "'").replace(/[?.!,]/g, '').replace(/\s+/g, ' ').trim();
@@ -2536,6 +2543,134 @@
         </div>
       </section>`);
     }).catch(e => h(`<section><div class="panel center"><h2>😕 לא הצלחתי לטעון</h2><p>${esc(e.message)}</p></div></section>`)));
+  }
+
+  // ===== Nushnush: 8th-grade games (A2 / Band II) =====
+  const EN_GRAMMAR8 = (window.EN_GRAMMAR8 || []).map(([topic, s, a, wrong, why]) => ({ topic, s, a, wrong, why }));
+  const EN_TOPICS8 = window.EN_TOPICS8 || {};
+  const EN_JOIN = (window.EN_JOIN || []).map(([s, a, wrong, why]) => ({ s, a, wrong, why }));
+  const EN_FORMS = (window.EN_FORMS || []).map(([v1, v2, v3]) => ({ v1, v2: v2.split('/'), v3: v3.split('/') }));
+  const EN_READING = window.EN_READING || [];
+  const engRound = (items, makeQ, again) => tenMcRound(items, makeQ, (right, total, review) => {
+    S.stats.engGrammarRight = (S.stats.engGrammarRight || 0) + right;
+    engResult(right, total, again); engReview(review);
+  });
+
+  // grammar for 8th grade
+  let engTopic8 = 'mix';
+  function engGrammar8() {
+    h(`<section class="panel">
+      <h2>🧩 דקדוק – כיתה ח'</h2>
+      <p>הנושאים של רמה A2 בתוכנית הלימודים. אחרי כל תשובה מופיע הסבר.</p>
+      <div class="chips">
+        <button class="chip ${engTopic8 === 'mix' ? 'on' : ''}" data-t="mix">🎲 מעורבב</button>
+        ${Object.entries(EN_TOPICS8).map(([k, l]) => `<button class="chip en ${engTopic8 === k ? 'on' : ''}" data-t="${k}">${esc(l)}</button>`).join('')}
+      </div>
+      <button class="btn blue" id="go">Let's go! 🚀</button>
+    </section>`);
+    $app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { engTopic8 = b.dataset.t; sfx('tap'); engGrammar8(); });
+    document.getElementById('go').onclick = engGrammar8Play;
+  }
+  function engGrammar8Play() {
+    const pool = engTopic8 === 'mix' ? EN_GRAMMAR8 : EN_GRAMMAR8.filter(g => g.topic === engTopic8);
+    engRound(shuffle(pool).slice(0, 10), g => ({ s: g.s, a: g.a, wrong: g.wrong, why: g.why, tag: engTopic8 === 'mix' ? EN_TOPICS8[g.topic] : '' }), engGrammar8Play);
+  }
+
+  // joining sentences with conjunctions (the exam's "complex sentences" task)
+  function engJoin() {
+    engRound(shuffle(EN_JOIN).slice(0, 10), j => j, engJoin);
+  }
+
+  // verb forms: V2 (past) or V3 (past participle)
+  let engFormsMode = 'choose';
+  function engForms() {
+    h(`<section class="panel">
+      <h2>🔁 V1 · V2 · V3</h2>
+      <p>שלוש הצורות של פעלים לא רגילים: <span class="en">go – went – gone</span>. את V2 צריך ל-Past Simple, ואת V3 ל-Present Perfect ולסביל.</p>
+      <div class="chips">
+        <button class="chip ${engFormsMode === 'choose' ? 'on' : ''}" data-m="choose">👆 בוחרים</button>
+        <button class="chip ${engFormsMode === 'type' ? 'on' : ''}" data-m="type">⌨️ מקלידים (יותר קשה)</button>
+      </div>
+      <button class="btn cherry" id="go">Let's go! 🚀</button>
+    </section>`);
+    $app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { engFormsMode = b.dataset.m; sfx('tap'); engForms(); });
+    document.getElementById('go').onclick = engFormsPlay;
+  }
+  function engFormsPlay() {
+    const qs = shuffle(EN_FORMS).slice(0, 10).map(v => ({ v, which: Math.random() < 0.5 ? 2 : 3 })), results = [], review = [];
+    const typing = engFormsMode === 'type';
+    let i = 0;
+    function show() {
+      const { v, which } = qs[i];
+      const right = which === 2 ? v.v2 : v.v3;
+      // wrong options: the other form (went vs gone) when it differs, plus the "regular" mistake (goed)
+      const pool = [...new Set([...(which === 2 ? v.v3 : v.v2), v.v1.replace(/e$/, '') + 'ed', v.v1])].filter(x => !right.includes(x));
+      const opts = shuffle([right[0], ...shuffle(pool).slice(0, 2)]);
+      const slot = k => k === which ? '<b class="form-ask">?</b>' : esc(k === 1 ? v.v1 : k === 2 ? v.v2[0] : v.v3[0]);
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">${which === 2 ? 'מה צורת העבר (V2)?' : 'מה צורת ה-V3?'}</div>
+        <div class="forms-row en"><span>${slot(1)}</span><span>${slot(2)}</span><span>${slot(3)}</span></div>
+        <div class="muted en" style="direction:ltr">${which === 2 ? 'Yesterday I ___ …' : 'I have ___ …'}</div>
+        ${typing
+          ? `<input class="search en spell-input" id="ans" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type it..." dir="ltr">
+             <div class="row center" style="margin-top:12px"><button class="btn cherry" id="check">בדיקה ✔️</button></div>`
+          : `<div class="answers">${opts.map((o, k) => `<button class="answer en" data-k="${k}">${esc(o)}</button>`).join('')}</div>`}
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const finish = ok => {
+        results.push(ok); if (!ok) review.push({ en: `${v.v1} – ${v.v2[0]} – ${v.v3[0]}`, he: '' });
+        $app.querySelector('.forms-row').innerHTML = `<span>${esc(v.v1)}</span><span class="${which === 2 ? (ok ? 'ok-word' : 'fix-word') : ''}">${esc(v.v2.join('/'))}</span><span class="${which === 3 ? (ok ? 'ok-word' : 'fix-word') : ''}">${esc(v.v3.join('/'))}</span>`;
+        sfx(ok ? 'good' : 'bad'); sayEn(`${v.v1}, ${v.v2[0]}, ${v.v3[0]}`);
+        document.getElementById('fb').textContent = ok ? pick(EN_PRAISE) : 'Not this time 🙂';
+        later(() => { i++; i < qs.length ? show() : (engResult(results.filter(Boolean).length, qs.length, engFormsPlay), engReview(review)); }, ok ? 1500 : 2800);
+      };
+      if (typing) {
+        const input = document.getElementById('ans'); input.focus();
+        const check = () => {
+          const val = normEn(input.value); if (!val) return;
+          input.disabled = true; document.getElementById('check').disabled = true;
+          const ok = right.includes(val);
+          input.classList.add(ok ? 'ok' : 'bad'); finish(ok);
+        };
+        document.getElementById('check').onclick = check;
+        input.onkeydown = e => { if (e.key === 'Enter' && !input.disabled) check(); };
+      } else {
+        const btns = [...$app.querySelectorAll('.answer')];
+        btns.forEach(b => b.onclick = () => {
+          btns.forEach(x => x.disabled = true);
+          const ok = right.includes(opts[+b.dataset.k]);
+          b.classList.add(ok ? 'right' : 'wrong'); if (!ok) btns[opts.indexOf(right[0])].classList.add('right');
+          finish(ok);
+        });
+      }
+    }
+    show();
+  }
+
+  // reading: a blog post, an informative text and an interview
+  function engReadPlay(k) {
+    readPlay(EN_READING[k], (right, total, review) => {
+      S.engRead = S.engRead || {}; S.engRead[k] = Math.max(S.engRead[k] || 0, right);
+      engResult(right, total, () => engReadPlay(k)); engReview(review);
+    });
+  }
+  function engReading() {
+    const idx = qp('p');
+    if (idx !== null && EN_READING[+idx]) return engReadPlay(+idx);
+    const done = S.engRead || {};
+    h(`<section>
+      <div class="panel">
+        <h2>📖 הבנת הנקרא</h2>
+        <p>טקסטים ברמה A2, כמו במבחן הארצי: שאלות על מה שכתוב, על מה שמבינים מהטקסט ועל מילים בהקשר.</p>
+      </div>
+      ${EN_READING.map((r, k) => `<button class="panel pick-row" data-p="${k}">
+        <span class="en pick-title">${esc(r.title)}</span>
+        <span class="muted en">${esc(r.type)}</span>
+        ${done[k] !== undefined ? `<span class="badge-m">${done[k]}/${r.qs.length}</span>` : ''}
+      </button>`).join('')}
+    </section>`);
+    $app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { sfx('tap'); location.hash = '#engReading?p=' + b.dataset.p; });
   }
 
   // ===== Luli's English (6th grade): A1 / Band I, like the national 6th-grade English exam =====
