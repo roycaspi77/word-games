@@ -348,6 +348,28 @@ body.duv { background: linear-gradient(160deg, #fecdd3 0%, #fbcfe8 45%, #fde68a 
 .rhyme-end { font-family: var(--font-niqqud); font-size: 24px; color: #be123c; background: #fff1f2; border-radius: 8px; padding: 0 6px; }
 .riddle { font-family: var(--font-niqqud); font-size: 32px; line-height: 1.7; font-weight: 700; color: #1e1b4b; margin: 10px 4px 12px; }
 
+/* Luli's English */
+.past-pair { display: flex; align-items: center; justify-content: center; gap: 14px; direction: ltr; }
+.past-pair .arrow { font-size: 30px; color: var(--muted); }
+.ok-word { color: #15803d !important; }
+.fix-word { color: #b91c1c !important; }
+.he-sentence { font-size: 24px; font-family: var(--font-title); margin: 8px 0 12px; }
+.built {
+  min-height: 56px; background: #f5f3ff; border-radius: 16px; padding: 12px; font-size: 22px; font-family: var(--font-title);
+  text-align: left; margin-bottom: 14px; border: 3px dashed #c4b5fd;
+}
+.built-ph { color: var(--muted); }
+.built-w { color: #4338ca; font-weight: 700; }
+.built-w + .built-w { margin-left: .3em; }
+.built-end { color: #4338ca; font-weight: 700; }
+.word-tiles { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 12px; direction: ltr; }
+.word-tile {
+  border: 0; border-radius: 14px; padding: 10px 16px; background: #fff; font-family: var(--font-title); font-size: 20px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .14);
+}
+.word-tile.used { opacity: .25; }
+.word-tile.shake { animation: wobble .35s; background: #fee2e2; }
+
 /* Luli's area (6th grade) */
 .tile-luli { background: linear-gradient(135deg, #c084fc, #db2777); }
 .luli-hero { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #faf5ff, #fdf2f8); }

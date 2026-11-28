@@ -5,6 +5,12 @@ A cheerful Hebrew vocabulary app for kids that you can install on a phone or com
 ## What's inside
 The home screen has three areas plus achievements:
 - **🍭 Luli's area (האיזור של לולי)**: Hebrew vocabulary for 6th grade, with the memory game, trivia, word search, flash cards, dictionary and word of the day below.
+  - **🗣️ English for 6th grade** (inside Luli's area, data in `docs/luli-english.js`): built on the curriculum's A1 level and Band I, with the question types of the national 6th-grade English exam. All texts are original.
+    - *אוצר מילים*: word for a picture, word for a definition, opposites and sentence completion.
+    - *דקדוק*: there is/are, was/were, comparatives, can, wh- questions, my/his/her/their, tenses, a/an and plurals, with Hebrew explanations.
+    - *Past Simple*: 40 irregular and 16 regular verbs. Choose or type, with realistic wrong forms (goed, teached).
+    - *בונים משפט*: tap English words in order to build the Hebrew sentence (personal details, like the exam's writing part).
+    - *הבנת הנקרא*: an email, an advertisement and a story, with literal and inference questions.
 - **🍒 Duvduv's area (האיזור של דובדוב)**: Hebrew for 1st grade.
 - **🌍 האיזור של נושנוש**: English for 8th grade.
 

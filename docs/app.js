@@ -334,6 +334,11 @@
     { id: 'words100', e: '📚', t: 'תולעת ספרים',        d: 'שלטת ב-100 מילים',              v: masteredCount, goal: 100 },
     { id: 'words200', e: '🏰', t: 'מגדל של מילים',      d: 'שלטת ב-200 מילים',              v: masteredCount, goal: 200 },
     { id: 'wordsAll', e: '👑', t: 'מלך המילים',          d: 'שלטת בכל המילים!',              v: masteredCount, goal: WORDS.length },
+    // Luli's English
+    { id: 'le1',      e: '🗣️', t: 'Hi Luli!',            d: 'שיחקת באנגלית של לולי',          v: () => st().leGames || 0, goal: 1 },
+    { id: 'lePerfect', e: '🌟', t: 'A+',                 d: 'סבב מושלם באנגלית של לולי',      v: () => st().lePerfect || 0, goal: 1 },
+    { id: 'leBuild20', e: '🔀', t: 'בונה משפטים',        d: 'בנית 20 משפטים באנגלית',         v: () => st().leBuilt || 0, goal: 20 },
+    { id: 'leRead',   e: '📖', t: 'Bookworm',            d: 'פתרת את כל קטעי הקריאה של לולי', v: () => Object.keys(S.leRead || {}).length, goal: (window.LE_READING || []).length },
     // Duvduv's area
     { id: 'duv1',     e: '🍒', t: 'חבר של דובדוב',      d: 'שיחקת באיזור של דובדוב',        v: () => st().duvGames, goal: 1 },
     { id: 'duvPerfect', e: '🌟', t: 'כוכב כיתה א\'',     d: 'הכול נכון במשחק של דובדוב',     v: () => st().duvPerfect, goal: 1 },
@@ -388,7 +393,7 @@
   ];
 
   // ---------- screens ----------
-  const SCREENS = { home, stars, progress, hebrew, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, duvWrite, duvSound, duvRhyme, duvSentence, duvEnglish, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
+  const SCREENS = { home, stars, progress, hebrew, leEnglish, leVocab, leGrammar, lePast, leBuild, leReading, memory, trivia, wordsearch, flash, words, badges, settings, duvduv, duvFirst, duvRead, duvBuild, duvMissing, duvWrite, duvSound, duvRhyme, duvSentence, duvEnglish, english, engVocab, engSpell, engTense, engSignal, engRules, tenth, tenVocab, tenGrammar, tenReading, tenWriting, tenListening };
   let backTo = '#home';
   function route() {
     const name = (location.hash || '#home').slice(1).split('?')[0];
@@ -399,7 +404,8 @@
     backTo = name.startsWith('duv') && name !== 'duvduv' ? '#duvduv'
       : name.startsWith('eng') && name !== 'english' ? '#english'
       : name.startsWith('ten') && name !== 'tenth' ? '#tenth'
-      : LULI_SCREENS.includes(name) && name !== 'hebrew' ? '#hebrew' : '#home';
+      : name.startsWith('le') && name !== 'leEnglish' ? '#leEnglish'
+      : (LULI_SCREENS.includes(name) || name === 'leEnglish') && name !== 'hebrew' ? '#hebrew' : '#home';
     if (location.hash.includes('?')) backTo = '#' + name; // sub-pages (a passage, a clip, a task) go back to their list
     if (window.speechSynthesis) speechSynthesis.cancel();
     document.body.classList.toggle('ten', name.startsWith('ten'));
@@ -458,6 +464,7 @@
       </div>
       <div class="game-grid">
         ${GAMES.map(g => `<button class="game-tile ${g.tile}" data-go="${g.id}"><span class="emoji">${g.emoji}</span><span class="title">${g.title}</span><span class="sub">${g.sub}</span></button>`).join('')}
+        <button class="game-tile tile-indigo" data-go="leEnglish"><span class="emoji">🗣️</span><span class="title">אנגלית</span><span class="sub">משחקים באנגלית לכיתה ו'</span></button>
         <button class="game-tile tile-teal" data-go="words"><span class="emoji">📖</span><span class="title">המילון שלי</span><span class="sub">חיפוש, מועדפים ומילים קשות</span></button>
       </div>
       <div class="panel wotd" style="margin-top:18px">
@@ -2096,7 +2103,14 @@
     $app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { sfx('tap'); location.hash = '#tenReading?p=' + b.dataset.p; });
   }
   function tenReadPlay(idx) {
-    const r = TEN_READING[idx], results = [], review = [];
+    readPlay(TEN_READING[idx], (right, total, review) => {
+      S2().tenRead[idx] = Math.max(S.tenRead[idx] || 0, right);
+      tenResult(right, total, () => tenReadPlay(idx), review);
+    });
+  }
+  // a reading passage with numbered paragraphs and its questions, one at a time (shared by several areas)
+  function readPlay(r, onDone) {
+    const results = [], review = [];
     let i = 0;
     h(`<section>
       <div class="read-layout">
@@ -2133,9 +2147,7 @@
         next.onclick = () => {
           i++;
           if (i < r.qs.length) return show();
-          const right = results.filter(Boolean).length;
-          S2().tenRead[idx] = Math.max(S.tenRead[idx] || 0, right);
-          tenResult(right, r.qs.length, () => tenReadPlay(idx), review);
+          onDone(results.filter(Boolean).length, r.qs.length, review);
         };
       };
       if (q.t === 'mc') {
@@ -2404,7 +2416,7 @@
   const AREA_NAMES = { luli: '🍭 לולי', duv: '🍒 דובדוב', eng: '🌍 נושנוש', ten: '🏀 יובלולו' };
   function gameTitle(game) {
     const name = String(game || '').split('?')[0];
-    const all = [...GAMES, ...DUV_GAMES, ...EN_GAMES, ...TEN_GAMES];
+    const all = [...GAMES, ...DUV_GAMES, ...EN_GAMES, ...TEN_GAMES, ...LE_GAMES, { id: 'leEnglish', title: 'אנגלית' }];
     const g = all.find(x => x.id === name);
     return g ? g.title.replace(/<[^>]*>/g, '') : ({ import: 'כוכבים מלפני הקישור' })[name] || name;
   }
@@ -2524,6 +2536,291 @@
         </div>
       </section>`);
     }).catch(e => h(`<section><div class="panel center"><h2>😕 לא הצלחתי לטעון</h2><p>${esc(e.message)}</p></div></section>`)));
+  }
+
+  // ===== Luli's English (6th grade): A1 / Band I, like the national 6th-grade English exam =====
+  const LE_VOCAB = (window.LE_VOCAB || []).map(([type, prompt, answer]) => ({ type, prompt, answer }));
+  const LE_VOCAB_HE = window.LE_VOCAB_HE || {};
+  const LE_GRAMMAR = (window.LE_GRAMMAR || []).map(([topic, s, a, wrong, why]) => ({ topic, s, a, wrong, why }));
+  const LE_TOPICS = window.LE_TOPICS || {};
+  const LE_SENTENCES = (window.LE_SENTENCES || []).map(([he, en]) => ({ he, en }));
+  const LE_READING = window.LE_READING || [];
+  const LE_PAST = [...(window.LE_IRREGULAR || []).map(([b, p]) => ({ b, p, irr: true })), ...(window.LE_REGULAR || []).map(([b, p]) => ({ b, p, irr: false }))];
+  const LE_GAMES = [
+    { id: 'leVocab',   emoji: '📚', title: 'אוצר מילים',      sub: 'תמונה, הגדרה, הפכים והשלמה',   tile: 'tile-blue' },
+    { id: 'leGrammar', emoji: '🧩', title: 'דקדוק',           sub: 'There is, was/were, השוואות...', tile: 'tile-purple' },
+    { id: 'lePast',    emoji: '⏪', title: 'Past Simple',      sub: 'go → went: פעלים בעבר',         tile: 'tile-orange' },
+    { id: 'leBuild',   emoji: '🔀', title: 'בונים משפט',       sub: 'מסדרים מילים למשפט באנגלית',    tile: 'tile-pink' },
+    { id: 'leReading', emoji: '📖', title: 'הבנת הנקרא',       sub: 'מייל, מודעה וסיפור',            tile: 'tile-green' },
+  ];
+
+  function leEnglish() {
+    h(`<section>
+      <div class="panel luli-hero">
+        <div class="eng-mascot">🗣️</div>
+        <div><h1>אנגלית – כיתה ו'</h1>
+          <div class="muted">לפי תוכנית הלימודים (רמה A1, Band I) וסוגי השאלות במבחן הארצי של כיתה ו'</div></div>
+      </div>
+      <div class="game-grid">
+        ${LE_GAMES.map(g => `<button class="game-tile ${g.tile}" data-go="${g.id}"><span class="emoji">${g.emoji}</span><span class="title">${g.title}</span><span class="sub">${g.sub}</span></button>`).join('')}
+      </div>
+    </section>`);
+    bindGo();
+  }
+
+  function leResult(right, total, again, review) {
+    const stars = right >= total * 0.9 ? 3 : right >= total * 0.6 ? 2 : right > 0 ? 1 : 0;
+    addStars(right, right, total);
+    S.stats.leGames = (S.stats.leGames || 0) + 1;
+    if (right === total && total >= 5) S.stats.lePerfect = (S.stats.lePerfect || 0) + 1;
+    markPlayed(); save();
+    sfx(stars >= 2 ? 'win' : 'good'); if (stars >= 2) confetti();
+    const msg = right === total ? 'Perfect! מושלם 🤩' : stars === 3 ? 'Excellent! מצוין 🎉' : stars === 2 ? 'Well done! כל הכבוד 👏' : 'Keep practicing! ממשיכים להתאמן 💪';
+    h(`<section class="panel center">
+      <div class="eng-mascot">${LULI_ICON}</div>
+      <h1>${msg}</h1>
+      <div class="result-stars">${[1, 2, 3].map(k => `<span class="${k <= stars ? '' : 'off'}">⭐</span>`).join('')}</div>
+      <p style="font-size:20px">הצלחת <b>${right}</b> מתוך ${total} · קיבלת <b>${right}</b> כוכבים</p>
+      ${review && review.length ? `<div class="label" style="text-align:right">לחזור על:</div><ul class="mistakes">${review.map(x => `<li><span class="en">${esc(x.en)}</span>${x.he ? ` – <b class="en">${esc(x.he)}</b>` : ''}</li>`).join('')}</ul>` : ''}
+      <div class="row center" style="margin-top:12px">
+        <button class="btn" id="again">🔁 עוד פעם</button>
+        <button class="btn ghost" data-go="leEnglish">🗣️ לאנגלית של לולי</button>
+      </div>
+    </section>`);
+    document.getElementById('again').onclick = again; bindGo();
+    checkBadges();
+  }
+
+  // 1. vocabulary, mixing the exam's question types
+  let leVocabType = 'mix';
+  function leVocab() {
+    h(`<section class="panel">
+      <h2>📚 אוצר מילים – Band I</h2>
+      <p>כמו בחלק של אוצר המילים במבחן: מילה לתמונה, מילה להגדרה, הפכים והשלמת משפט. 10 שאלות.</p>
+      <div class="chips">
+        <button class="chip ${leVocabType === 'mix' ? 'on' : ''}" data-t="mix">🎲 הכול</button>
+        ${[['pic', '🖼️ תמונה'], ['def', '📝 הגדרה'], ['opp', '↔️ הפכים'], ['fill', '✏️ השלמה']].map(([k, l]) => `<button class="chip ${leVocabType === k ? 'on' : ''}" data-t="${k}">${l}</button>`).join('')}
+      </div>
+      <button class="btn blue" id="go">Let's go! 🚀</button>
+    </section>`);
+    $app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { leVocabType = b.dataset.t; sfx('tap'); leVocab(); });
+    document.getElementById('go').onclick = leVocabPlay;
+  }
+  function leVocabPlay() {
+    const pool = leVocabType === 'mix' ? LE_VOCAB : LE_VOCAB.filter(v => v.type === leVocabType);
+    const qs = shuffle(pool).slice(0, 10), results = [], review = [];
+    let i = 0;
+    function show() {
+      const v = qs[i];
+      const wrong = shuffle(LE_VOCAB.filter(x => x.type === v.type && x.answer !== v.answer)).slice(0, 2).map(x => x.answer);
+      const opts = shuffle([v.answer, ...wrong]);
+      const prompt = v.type === 'pic' ? `<div class="duv-pic">${v.prompt}</div>`
+        : v.type === 'fill' ? `<div class="sentence en">${esc(v.prompt).replace('___', '<span class="blank">' + '&nbsp;'.repeat(10) + '</span>')}</div>`
+        : `<div class="q-word en ${v.type === 'def' ? 'long' : ''}">${esc(v.prompt)}</div>`;
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">${LE_VOCAB_HE[v.type]}</div>
+        ${prompt}
+        <div class="answers">${opts.map((o, k) => `<button class="answer en" data-k="${k}">${esc(o)}</button>`).join('')}</div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const btns = [...$app.querySelectorAll('.answer')];
+      btns.forEach(b => b.onclick = () => {
+        btns.forEach(x => x.disabled = true);
+        const ok = opts[+b.dataset.k] === v.answer;
+        results.push(ok); if (!ok) review.push({ en: v.type === 'pic' ? v.prompt : v.prompt.replace('___', '…'), he: v.answer });
+        b.classList.add(ok ? 'right' : 'wrong'); if (!ok) btns[opts.indexOf(v.answer)].classList.add('right');
+        sfx(ok ? 'good' : 'bad'); sayEn(v.answer);
+        document.getElementById('fb').textContent = ok ? pick(EN_PRAISE) : 'Not this time 🙂';
+        later(() => { i++; i < qs.length ? show() : leResult(results.filter(Boolean).length, qs.length, leVocabPlay, review); }, ok ? 1200 : 2400);
+      });
+    }
+    show();
+  }
+
+  // 2. grammar (A1)
+  let leTopic = 'mix';
+  function leGrammar() {
+    h(`<section class="panel">
+      <h2>🧩 דקדוק</h2>
+      <p>הנושאים של כיתה ו'. אחרי כל תשובה מופיע הסבר.</p>
+      <div class="chips">
+        <button class="chip ${leTopic === 'mix' ? 'on' : ''}" data-t="mix">🎲 מעורבב</button>
+        ${Object.entries(LE_TOPICS).map(([k, l]) => `<button class="chip en ${leTopic === k ? 'on' : ''}" data-t="${k}">${esc(l)}</button>`).join('')}
+      </div>
+      <button class="btn" id="go">Let's go! 🚀</button>
+    </section>`);
+    $app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { leTopic = b.dataset.t; sfx('tap'); leGrammar(); });
+    document.getElementById('go').onclick = leGrammarPlay;
+  }
+  function leGrammarPlay() {
+    const pool = leTopic === 'mix' ? LE_GRAMMAR : LE_GRAMMAR.filter(g => g.topic === leTopic);
+    tenMcRound(shuffle(pool).slice(0, 10), g => ({ s: g.s, a: g.a, wrong: g.wrong, why: g.why, tag: leTopic === 'mix' ? LE_TOPICS[g.topic] : '' }),
+      (right, total, review) => leResult(right, total, leGrammarPlay, review));
+  }
+
+  // 3. Past Simple: irregular and regular verbs, choose or type
+  let lePastMode = 'choose', lePastKind = 'irr';
+  function lePast() {
+    h(`<section class="panel">
+      <h2>⏪ Past Simple – פעלים בעבר</h2>
+      <p>רואים פועל (go) וכותבים או בוחרים את צורת העבר (went).</p>
+      <div class="label">אילו פעלים?</div>
+      <div class="chips">
+        <button class="chip ${lePastKind === 'irr' ? 'on' : ''}" data-k="irr">פעלים לא רגילים (go → went)</button>
+        <button class="chip ${lePastKind === 'reg' ? 'on' : ''}" data-k="reg">רגילים עם ed (play → played)</button>
+        <button class="chip ${lePastKind === 'all' ? 'on' : ''}" data-k="all">הכול</button>
+      </div>
+      <div class="label">איך משחקים?</div>
+      <div class="chips">
+        <button class="chip ${lePastMode === 'choose' ? 'on' : ''}" data-m="choose">👆 בוחרים</button>
+        <button class="chip ${lePastMode === 'type' ? 'on' : ''}" data-m="type">⌨️ מקלידים (יותר קשה)</button>
+      </div>
+      <p class="muted" style="font-size:15px">טיפ: ed רגיל → played · y אחרי עיצור → ied (study → studied) · עיצור-תנועה-עיצור → מכפילים (stop → stopped)</p>
+      <button class="btn orange" id="go">Let's go! 🚀</button>
+    </section>`);
+    $app.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { lePastKind = b.dataset.k; sfx('tap'); lePast(); });
+    $app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { lePastMode = b.dataset.m; sfx('tap'); lePast(); });
+    document.getElementById('go').onclick = lePastPlay;
+  }
+  // a believable wrong past form: base+ed for irregular verbs, a spelling slip for regular ones
+  function lePastWrong(v) {
+    const out = new Set();
+    if (v.irr) out.add(v.b.replace(/e$/, '') + 'ed');
+    else {
+      out.add(v.b + 'ed');                      // studyed / stoped-type slips
+      out.add(v.b.replace(/y$/, 'i') + 'ed');
+      out.add(v.b.replace(/e$/, '') + 'ed');
+      out.add(v.b + v.b.slice(-1) + 'ed');
+    }
+    out.add(v.b);
+    out.add(v.b + 's');
+    out.delete(v.p);
+    return shuffle([...out]).slice(0, 2);
+  }
+  function lePastPlay() {
+    const pool = LE_PAST.filter(v => lePastKind === 'all' || (lePastKind === 'irr') === v.irr);
+    const qs = shuffle(pool).slice(0, 10), results = [], review = [];
+    const typing = lePastMode === 'type';
+    let i = 0;
+    function show() {
+      const v = qs[i];
+      const opts = shuffle([v.p, ...lePastWrong(v)]);
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">מה צורת העבר?</div>
+        <div class="past-pair en"><span class="q-word en">${esc(v.b)}</span><span class="arrow">→</span><span class="q-word en" id="pp">?</span></div>
+        <div class="muted en" style="direction:ltr">Yesterday I ___ …</div>
+        ${typing
+          ? `<input class="search en spell-input" id="ans" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="past form..." dir="ltr">
+             <div class="row center" style="margin-top:12px"><button class="btn orange" id="check">בדיקה ✔️</button></div>`
+          : `<div class="answers">${opts.map((o, k) => `<button class="answer en" data-k="${k}">${esc(o)}</button>`).join('')}</div>`}
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const finish = ok => {
+        results.push(ok); if (!ok) review.push({ en: v.b, he: v.p });
+        document.getElementById('pp').textContent = v.p;
+        document.getElementById('pp').classList.add(ok ? 'ok-word' : 'fix-word');
+        sfx(ok ? 'good' : 'bad'); sayEn(`${v.b}, ${v.p}`);
+        document.getElementById('fb').textContent = ok ? pick(EN_PRAISE) : `${v.b} → ${v.p}`;
+        later(() => { i++; i < qs.length ? show() : leResult(results.filter(Boolean).length, qs.length, lePastPlay, review); }, ok ? 1300 : 2600);
+      };
+      if (typing) {
+        const input = document.getElementById('ans'); input.focus();
+        const check = () => {
+          const val = normEn(input.value); if (!val) return;
+          input.disabled = true; document.getElementById('check').disabled = true;
+          const ok = val === v.p;
+          input.classList.add(ok ? 'ok' : 'bad'); finish(ok);
+        };
+        document.getElementById('check').onclick = check;
+        input.onkeydown = e => { if (e.key === 'Enter' && !input.disabled) check(); };
+      } else {
+        const btns = [...$app.querySelectorAll('.answer')];
+        btns.forEach(b => b.onclick = () => {
+          btns.forEach(x => x.disabled = true);
+          const ok = opts[+b.dataset.k] === v.p;
+          b.classList.add(ok ? 'right' : 'wrong'); if (!ok) btns[opts.indexOf(v.p)].classList.add('right');
+          finish(ok);
+        });
+      }
+    }
+    show();
+  }
+
+  // 4. sentence builder: tap the English words in the right order
+  function leBuild() {
+    const qs = shuffle(LE_SENTENCES).slice(0, 8), results = [];
+    let i = 0;
+    function show() {
+      const s = qs[i];
+      const end = (s.en.match(/[.?!]$/) || [''])[0];
+      const words = s.en.replace(/[.?!]$/, '').split(' ');
+      let tiles = shuffle(words.map((w, k) => ({ w, k })));
+      if (tiles.every((t, k) => t.k === k)) tiles = tiles.reverse();
+      let pos = 0, mistakes = 0;
+      h(`<section><div class="panel q-card">
+        ${duvDots(results, i, qs.length)}
+        <div class="q-ask">סדרו את המילים למשפט באנגלית:</div>
+        <div class="he-sentence">${esc(s.he)}</div>
+        <div class="built en" id="built"><span class="built-ph">…</span></div>
+        <div class="word-tiles en">${tiles.map((t, k) => `<button class="word-tile" data-t="${k}">${esc(t.w)}</button>`).join('')}</div>
+        <div class="row center"><button class="btn ghost small" id="hintB">💡 המילה הבאה</button></div>
+        <div class="feedback" id="fb"></div>
+      </div></section>`);
+      const built = document.getElementById('built'), btns = [...$app.querySelectorAll('.word-tile')];
+      const place = b => {
+        b.disabled = true; b.classList.add('used');
+        if (pos === 0) built.innerHTML = '';
+        built.insertAdjacentHTML('beforeend', `<span class="built-w">${esc(b.textContent)}</span>`);
+        pos++;
+        if (pos === words.length) {
+          built.insertAdjacentHTML('beforeend', `<span class="built-end">${end}</span>`);
+          const ok = mistakes === 0; results.push(ok);
+          S.stats.leBuilt = (S.stats.leBuilt || 0) + 1; save();
+          sfx('good'); confetti(30); sayEn(s.en);
+          document.getElementById('fb').textContent = ok ? pick(EN_PRAISE) : 'Done! 👍';
+          btns.forEach(x => x.disabled = true);
+          later(() => { i++; i < qs.length ? show() : leResult(results.filter(Boolean).length, qs.length, leBuild, []); }, 1900);
+        } else sfx('tap');
+      };
+      btns.forEach(b => b.onclick = () => {
+        if (b.textContent !== words[pos]) { // the same word twice counts either way
+          mistakes++; sfx('bad'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); return;
+        }
+        place(b);
+      });
+      document.getElementById('hintB').onclick = () => {
+        const b = btns.find(x => !x.disabled && x.textContent === words[pos]);
+        if (b) { mistakes++; place(b); }
+      };
+    }
+    show();
+  }
+
+  // 5. reading: an email, an advertisement and a story
+  function leReadPlay(k) {
+    readPlay(LE_READING[k], (right, total, review) => {
+      S.leRead = S.leRead || {}; S.leRead[k] = Math.max(S.leRead[k] || 0, right);
+      leResult(right, total, () => leReadPlay(k), review);
+    });
+  }
+  function leReading() {
+    const idx = qp('p');
+    if (idx !== null && LE_READING[+idx]) return leReadPlay(+idx);
+    const done = S.leRead || {};
+    h(`<section>
+      <div class="panel">
+        <h2>📖 הבנת הנקרא</h2>
+        <p>כמו במבחן של כיתה ו': סוגים שונים של טקסטים, ושאלות על מה שכתוב ועל מה שמבינים מהטקסט.</p>
+      </div>
+      ${LE_READING.map((r, k) => `<button class="panel pick-row" data-p="${k}">
+        <span class="en pick-title">${esc(r.title)}</span>
+        <span class="muted en">${esc(r.type)}</span>
+        ${done[k] !== undefined ? `<span class="badge-m">${done[k]}/${r.qs.length}</span>` : ''}
+      </button>`).join('')}
+    </section>`);
+    $app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { sfx('tap'); location.hash = '#leReading?p=' + b.dataset.p; });
   }
 
   // ===== Achievements =====
