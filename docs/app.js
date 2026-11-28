@@ -352,7 +352,7 @@
     { id: 'duvReader', e: '📗', t: 'קורא אלוף',          d: 'פתרת 20 חידות מי אני',            v: () => st().duvRiddles || 0, goal: 20 },
     { id: 'duv20',    e: '🧺', t: 'סל דובדבנים',         d: '20 משחקים באיזור של דובדוב',    v: () => st().duvGames, goal: 20 },
     // Noshnosh's area (English)
-    { id: 'eng1',     e: '🌍', t: 'Hello World',          d: 'שיחקת באיזור של נושנוש',        v: () => st().engGames, goal: 1 },
+    { id: 'eng1',     e: '🍝', t: 'Hello World',          d: 'שיחקת באיזור של נושנוש',        v: () => st().engGames, goal: 1 },
     { id: 'engPerfect', e: '✅', t: 'Perfect!',            d: 'סבב מושלם באנגלית',             v: () => st().engPerfect, goal: 1 },
     { id: 'engTense50', e: '⏱️', t: 'אדון הזמנים',        d: '50 תשובות נכונות ב-Simple / Progressive', v: () => st().engTenseRight, goal: 50 },
     { id: 'engSpell20', e: '🔡', t: 'Spelling Bee',       d: 'איית נכון 20 מילים באנגלית',    v: () => st().engSpelled, goal: 20 },
@@ -1546,7 +1546,7 @@
     EN_TENSE.push({ s: f[0], answers: f[1].split('/').map(x => x.trim()), wrong: f[2].split(';').map(x => x.trim()), t: f[3], why: f[4] });
   });
   const EN_SIGNALS = window.EN_SIGNALS || { S: [], P: [] };
-  const ENG_ICON = '🌍';
+  const ENG_ICON = '🍝';
   const TENSE_NAME = { S: 'Present Simple', P: 'Present Progressive' };
   const TENSE_HE = { S: 'הווה פשוט', P: 'הווה מתמשך' };
   const EN_GAMES = [
@@ -2420,7 +2420,7 @@
   }
 
   // ===== Stars: send stars to someone else =====
-  const AREA_NAMES = { luli: '🍭 לולי', duv: '🍒 דובדוב', eng: '🌍 נושנוש', ten: '🏀 יובלולו' };
+  const AREA_NAMES = { luli: '🍭 לולי', duv: '🍒 דובדוב', eng: '🍝 נושנוש', ten: '🏀 יובלולו' };
   function gameTitle(game) {
     const name = String(game || '').split('?')[0];
     const all = [...GAMES, ...DUV_GAMES, ...EN_GAMES, ...TEN_GAMES, ...LE_GAMES, { id: 'leEnglish', title: 'אנגלית' }];
